@@ -14,24 +14,21 @@ import Control.Monad.Trans (liftIO)
 data L = R | G | Y deriving (Show, Generic, Typeable)
 instance Serialize L
 
+
+printL :: Show a => a -> Tredis ()
+printL = liftIO . print
+
 main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
     runTredis conn $ do
-        set "hello" ([R, G, Y] :: [L]) >>= liftIO . print
-        incr "hello"
-        get "hello" >>= liftIO . (print :: Either TredisReply (Maybe [L]) -> IO ())
 
-        -- set "hello" True >>= liftIO . print
-        -- a <- get "hello" :: Tredis (Either TredisReply (Maybe Bool))
-        -- liftIO $ print a
+        set "hello" [True, False, True]
+
+        a <- get "hello" :: Tredis (Either TredisReply (Maybe [Bool]))
+        printL a
 
 
-        -- incr "hello" >>= liftIO . print
-        -- a <- get "hello" >>= decode :: Redis (Either E L)
-        -- liftIO $ print a
+        incr "hello" >>= printL
 
-        -- set "hello" $ encode (Just 2 :: String)
-        -- a <- get "hello"
-        -- a <- get "hello" >>= decode :: Redis (Either E Bool)
-        -- liftIO $ print a
+        return ()
