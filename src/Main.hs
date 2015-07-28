@@ -11,24 +11,17 @@ import Data.ByteString
 import Data.Serialize (Serialize)
 import Control.Monad.Trans (liftIO)
 
-data L = R | G | Y deriving (Show, Generic, Typeable)
-instance Serialize L
-
-
-printL :: Show a => a -> Tredis ()
-printL = liftIO . print
+-- printL :: Show a => a -> Tredis ()
+-- printL = liftIO . print
 
 main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
-    runTredis conn $ do
+    result <- runTredis conn $ do
 
         set "hello" [True, False, True]
+        get "hello"  :: Tredis (RedisReply (Maybe [Bool]))
+        -- incr "hello"
 
-        a <- get "hello" :: Tredis (Either TredisReply (Maybe [Bool]))
-        printL a
 
-
-        incr "hello" >>= printL
-
-        return ()
+    print result
