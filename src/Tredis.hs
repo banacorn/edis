@@ -16,13 +16,13 @@ import Data.Map
 encodeValue :: Serialize a => a -> ByteString
 encodeValue = S.encode
 
-
-decodeValue :: Serialize a => ByteString -> Tredis (Maybe a)
-decodeValue raw = case S.decode raw of
-    Right val -> return $ Just val
+decodeValue :: Serialize a => Maybe ByteString -> Tredis (TredisReply (Maybe a))
+decodeValue Nothing = return (Right Nothing)
+decodeValue (Just raw) = case S.decode raw of
+    Right val -> return $ Right (Just val)
     Left err -> do
         assertError $ DecodeError err
-        return Nothing
+        return $ Left (DecodeError err)
 
 -- decodeValue Nothing    = Nothing
 -- decodeValue (Just raw) = case S.decode raw of
@@ -39,30 +39,25 @@ decodeValue raw = case S.decode raw of
 --  Tredis
 --------------------------------------------------------------------------------
 
-type RedisReply a = Either Reply a
+type TredisReply a = Either TredisError a
 
 type Key = ByteString
 -- Hash table for storing key-type relation
 type TypeTable = Map Key TypeRep
 data TredisState = TredisState
     {   typeTable :: TypeTable
-    ,   typeError :: [TypeError]
+    ,   typeError :: [TredisError]
     }
 
 defaultTredisState :: TredisState
 defaultTredisState = TredisState Map.empty []
 
-data TypeError = Undeclared
-               | TypeMismatch
-               | DecodeError String
-               deriving (Show)
-
 type Tredis = StateT TredisState Redis
--- data TredisReply = RedisReply Reply     -- original Redis error reply
---                  | DecodeError String   -- decoding error
---                  | Undeclared Key       -- unable to determine the type of a key
---                  | TypeError Key TypeRep TypeRep
---                  deriving (Show)
+data TredisError = RedisReply Reply     -- original Redis error reply
+                 | DecodeError String   -- decoding error
+                 | Undeclared Key       -- unable to determine the type of a key
+                 | TypeMismatch Key TypeRep TypeRep
+                 deriving (Show)
 
 -- assert key-type relation
 assertType :: Key -> TypeRep -> Tredis ()
@@ -77,19 +72,24 @@ lookupType key = do
     let table = typeTable state
     return $ Map.lookup key table
 
-assertError :: TypeError -> Tredis ()
+assertError :: TredisError -> Tredis ()
 assertError e = do
     state <- State.get
     let errors = typeError state
     State.put (state { typeError = e : errors })
 
-liftDecode :: (Serialize a) => Redis (RedisReply (Maybe ByteString)) -> Tredis (RedisReply (Maybe a))
-liftDecode f = lift f >>= g
-    where   g (Left a)           = Left  <$> return a
-            g (Right Nothing)    = Right <$> return Nothing
-            g (Right (Just raw)) = Right <$> decodeValue raw
+liftCommand :: Redis (Either Reply a) -> Tredis (TredisReply a)
+liftCommand f = lift f >>= return . mapLeft RedisReply
+    where   mapLeft :: (a -> c) -> Either a b -> Either c b
+            mapLeft f (Left a) = Left (f a)
+            mapLeft f (Right b) = Right b
 
-runTredis :: Connection -> Tredis a -> IO (Either [TypeError] a)
+liftDecode :: (Serialize a) => Redis (Either Reply (Maybe ByteString)) -> Tredis (TredisReply (Maybe a))
+liftDecode f = lift f >>= g
+    where   g (Left a)        = return $ Left (RedisReply a)
+            g (Right raw)     = decodeValue raw
+
+runTredis :: Connection -> Tredis a -> IO (Either [TredisError] a)
 runTredis conn f = runRedis conn $ do
     (value, state) <- runStateT f defaultTredisState
     let typeErrors = typeError state
@@ -101,29 +101,26 @@ runTredis conn f = runRedis conn $ do
 --  commands
 --------------------------------------------------------------------------------
 
-set :: (Serialize a, Typeable a) => ByteString -> a -> Tredis (RedisReply Status)
+set :: (Serialize a, Typeable a) => ByteString -> a -> Tredis (TredisReply Status)
 set key val = do
     assertType key (typeOf val)
-    lift $ R.set key (encodeValue val)
+    liftCommand $ R.set key (encodeValue val)
 
-get :: (Serialize a, Typeable a) => ByteString -> Tredis (RedisReply (Maybe a))
+get :: (Serialize a, Typeable a) => ByteString -> Tredis (TredisReply (Maybe a))
 get key = liftDecode $ R.get key
 
-incr :: ByteString -> Tredis (RedisReply Integer)
+incr :: ByteString -> Tredis (TredisReply Integer)
 incr key = do
-    -- result <- gets (Map.lookup key)
     result <- lookupType key
     case result of
         Just ty -> case ty == typeOfInteger of
-            True -> lift $ R.incr key                        -- Integer
+            True -> liftCommand $ R.incr key
             False -> do
-                assertError TypeMismatch
-                -- Right <$> Nothing
-                return $ Right 0
-                -- Left $ TypeError key typeOfInteger ty -- not Integer
-        Nothing -> do -- key-type relation not found
-            assertError Undeclared
-            return $ Right 0
+                assertError (TypeMismatch key typeOfInteger ty)
+                return $ Left (TypeMismatch key typeOfInteger ty)
+        Nothing -> do
+            assertError (Undeclared key)
+            return $ Left (Undeclared key)
     where
             typeOfInteger :: TypeRep
             typeOfInteger = typeOf (0 :: Integer)
