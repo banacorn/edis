@@ -24,17 +24,6 @@ decodeValue (Just raw) = case S.decode raw of
         assertError $ DecodeError err
         return $ Left (DecodeError err)
 
--- decodeValue Nothing    = Nothing
--- decodeValue (Just raw) = case S.decode raw of
---     Right val -> Just val            -- ok
---     Left err  -> Nothing             -- decode error
-
--- decodeValue (Left err) = Left (RedisReply err)   -- error from Redis
--- decodeValue (Right Nothing) = Right Nothing      -- nil
--- decodeValue (Right (Just raw)) = case S.decode raw of
---     Right val -> Right (Just val)           -- ok
---     Left err  -> Left (DecodeError err)     -- decode error
-
 --------------------------------------------------------------------------------
 --  Tredis
 --------------------------------------------------------------------------------
@@ -51,7 +40,7 @@ data TredisState = TredisState
 
 defaultTredisState :: TredisState
 defaultTredisState = TredisState Map.empty []
-
+-- Redis
 type Tredis = StateT TredisState Redis
 data TredisError = RedisReply Reply     -- original Redis error reply
                  | DecodeError String   -- decoding error

@@ -16,17 +16,24 @@ main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
 
-    -- original Redis
-    runRedis conn $ do
-        R.set "hello" "hey"
-        R.get "hello"  >>= (liftIO . print :: Either R.Reply (Maybe ByteString) -> Redis ())
-        R.incr "hello" >>= (liftIO . print :: Either R.Reply Integer            -> Redis ())
+    -- type mismatch
+    -- runRedis conn $ do
+    --     R.set "hello" "hey"                 -- SET hello hey
+    --     R.incr "hello"                      -- INCR hello
+    --     R.get "hello" >>= liftIO . print    -- GET hello
 
     -- typed Redis
     -- result <- runTredis conn $ do
-    --     T.set "hello" ([1, 2, 3] :: [Int])
-    --     T.get "hello"  >>= (liftIO . print :: TredisReply (Maybe [Int]) -> Tredis ())
-    --     T.incr "hello" >>= (liftIO . print :: TredisReply Integer       -> Tredis ())
-    -- -- print result
+    --     T.set "hello" ("hjahskjfh" :: ByteString)
+    --     T.incr "hello" -- >>= (liftIO . print :: TredisReply Integer       -> Tredis ())
+    --     T.get "hello"  -- >>= (liftIO . print :: TredisReply (Maybe ByteString) -> Tredis ())
+    -- print result
+
+    -- typed Redis
+    result <- runTredis conn $ do
+        T.set "hello" ([1, 2, 3] :: [Int])
+        T.get "hello"  >>= (liftIO . print :: TredisReply (Maybe [Int]) -> Tredis ())
+        T.incr "hello" >>= (liftIO . print :: TredisReply Integer       -> Tredis ())
+    -- print result
 
     return ()
