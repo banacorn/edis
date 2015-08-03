@@ -40,6 +40,7 @@ data TredisState = TredisState
 
 defaultTredisState :: TredisState
 defaultTredisState = TredisState Map.empty []
+
 -- Redis
 type Tredis = StateT TredisState Redis
 data TredisError = RedisReply Reply     -- original Redis error reply
