@@ -2,9 +2,9 @@
 
 module Tredis.Transaction where
 
--- import Data.Serialize (Serialize)
-import Data.ByteString hiding (map)
-
+import Data.Serialize as S
+import Data.ByteString hiding (map, unpack)
+import Data.ByteString.Char8 (unpack)
 import Control.Applicative
 -- import Control.Monad (void)
 import Control.Monad.State as State
@@ -24,11 +24,15 @@ data TxState = TxState
     ,   typeError :: [TypeError]
     }   deriving (Show)
 
-data Transaction
-    = Set Key ByteString
-    | Get Key
-    | Incr Key
-    deriving (Show)
+data Transaction where
+    Set :: (Show a, Serialize a) => Key -> a -> Transaction
+    Get :: Key -> Transaction
+    Incr :: Key -> Transaction
+
+instance Show Transaction where
+    show (Set k v) = "SET " ++ unpack k ++ " " ++ show v
+    show (Get k) = "SET " ++ unpack k
+    show (Incr k) = "SET " ++ unpack k
 
 defaultTxState :: TxState
 defaultTxState = TxState [] []
@@ -45,7 +49,7 @@ incr key = insertTx $ Incr key
 get :: Key -> Tx ()
 get key = insertTx $ Get key
 
-set :: Key -> ByteString -> Tx ()
+set :: (Show a, Serialize a) => Key -> a -> Tx ()
 set key val = insertTx $ Set key val
 
 extractTx :: Tx () -> Redis [Transaction]
@@ -58,7 +62,7 @@ runTx f = do
 
 toRedisTx :: Transaction -> Redis (Either Reply Status)
 toRedisTx (Get key) = sendRequest ["GET", key]
-toRedisTx (Set key val) = sendRequest ["SET", key, val]
+toRedisTx (Set key val) = sendRequest ["SET", key, S.encode val]
 toRedisTx (Incr key) = sendRequest ["Incr", key]
 
 

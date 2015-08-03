@@ -31,7 +31,7 @@ main = do
         -- liftIO $ print result
 
         T.execTransactions $ do
-            T.set "a" "40"
+            T.set "a" True
             T.incr "a"
 
 
