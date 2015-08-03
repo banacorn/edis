@@ -2,19 +2,14 @@
 
 module Tredis.Transaction where
 
-import Data.Serialize as S
-import Data.ByteString hiding (map, unpack)
-import Data.ByteString.Char8 (unpack)
+import Data.ByteString hiding (map, unpack, reverse)
+-- import Data.ByteString.Char8 (unpack)
 import Control.Applicative
--- import Control.Monad (void)
 import Control.Monad.State as State
 import Database.Redis as Redis hiding (Queued, Set)
 
-
-
 type Tx = StateT TxState Redis
 type Key = ByteString
-
 
 data TypeError = TypeMismatch
     deriving (Show)
@@ -24,15 +19,11 @@ data TxState = TxState
     ,   typeError :: [TypeError]
     }   deriving (Show)
 
-data Transaction where
-    Set :: (Show a, Serialize a) => Key -> a -> Transaction
-    Get :: Key -> Transaction
-    Incr :: Key -> Transaction
-
-instance Show Transaction where
-    show (Set k v) = "SET " ++ unpack k ++ " " ++ show v
-    show (Get k) = "SET " ++ unpack k
-    show (Incr k) = "SET " ++ unpack k
+data Transaction
+    = Set Key ByteString
+    | Get Key
+    | Incr Key
+    deriving (Show)
 
 defaultTxState :: TxState
 defaultTxState = TxState [] []
@@ -49,11 +40,11 @@ incr key = insertTx $ Incr key
 get :: Key -> Tx ()
 get key = insertTx $ Get key
 
-set :: (Show a, Serialize a) => Key -> a -> Tx ()
+set :: Key -> ByteString -> Tx ()
 set key val = insertTx $ Set key val
 
 extractTx :: Tx () -> Redis [Transaction]
-extractTx f = transactions <$> execStateT f defaultTxState
+extractTx f = reverse . transactions <$> execStateT f defaultTxState
 
 runTx :: Tx () -> Redis ()
 runTx f = do
@@ -62,16 +53,15 @@ runTx f = do
 
 toRedisTx :: Transaction -> Redis (Either Reply Status)
 toRedisTx (Get key) = sendRequest ["GET", key]
-toRedisTx (Set key val) = sendRequest ["SET", key, S.encode val]
+toRedisTx (Set key val) = sendRequest ["SET", key, val]
 toRedisTx (Incr key) = sendRequest ["Incr", key]
-
 
 execTransactions :: Tx () -> Redis ()
 execTransactions f = do
     multi
     extractTx f >>= liftIO . print
     runTx f
-    exec
+    exec >>= liftIO . print
 
     return ()
 

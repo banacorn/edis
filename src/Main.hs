@@ -15,24 +15,16 @@ import Data.Serialize (Serialize)
 import Control.Monad.Trans (liftIO)
 import Control.Applicative
 
-
+import Data.Int (Int64)
 main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
     result <- R.runRedis conn $ do
 
-        -- result <- R.multiExec $ do
-        --     R.set "hello" "hey"
-        --     R.get "hello"
-        --     R.incr "hello"
-        --     R.set "hello" "haha"
-        --     R.get "hello"
-        --
-        -- liftIO $ print result
-
         T.execTransactions $ do
-            T.set "a" True
+            T.set "a" "40"
             T.incr "a"
+            T.get "a"
 
 
 
