@@ -12,8 +12,17 @@ import Database.Redis as Redis hiding (Queued, Set)
 
 
 
-type Tx = StateT [Transaction] Redis
+type Tx = StateT TxState Redis
 type Key = ByteString
+
+
+data TypeError = TypeMismatch
+    deriving (Show)
+
+data TxState = TxState
+    {   transactions :: [Transaction]
+    ,   typeError :: [TypeError]
+    }   deriving (Show)
 
 data Transaction
     = Set Key ByteString
@@ -21,17 +30,26 @@ data Transaction
     | Incr Key
     deriving (Show)
 
+defaultTxState :: TxState
+defaultTxState = TxState [] []
+
+insertTx :: Transaction -> Tx ()
+insertTx tx = do
+    state <- State.get
+    let txs = transactions state
+    State.put $ state { transactions = tx : txs }
+
 incr :: Key -> Tx ()
-incr key = State.modify (Incr key :)
+incr key = insertTx $ Incr key
 
 get :: Key -> Tx ()
-get key = State.modify (Get key :)
+get key = insertTx $ Get key
 
 set :: Key -> ByteString -> Tx ()
-set key val = State.modify (Set key val :)
+set key val = insertTx $ Set key val
 
 extractTx :: Tx () -> Redis [Transaction]
-extractTx f = execStateT f []
+extractTx f = transactions <$> execStateT f defaultTxState
 
 runTx :: Tx () -> Redis ()
 runTx f = do
