@@ -23,12 +23,10 @@ main = do
 
         reply <- T.runTx $ do
             T.setInt "a" 40
-            T.set "a" "haha"
             T.incr "a"
+            T.set "a" "haha"
             T.get "a"
             T.del "a"
-            T.set "a" "haha"
-            T.get "a"
 
         case reply of
             Right rs -> liftIO $ print rs

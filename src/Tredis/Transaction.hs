@@ -38,17 +38,21 @@ data Transaction
 data TxState = TxState
     {   transactions :: [Transaction]
     ,   typeTable :: Map Key Type
-    ,   typeError :: [TypeError]
+    ,   typeError :: [(Int, TypeError)]
+    ,   counter :: Int
     }   deriving (Show)
 
 defaultTxState :: TxState
-defaultTxState = TxState [] Map.empty []
+defaultTxState = TxState [] Map.empty [] 1
 
 insertTx :: Transaction -> Tx ()
 insertTx tx = do
     state <- State.get
     let txs = transactions state
-    State.put $ state { transactions = tx : txs }
+    let count = counter state
+    State.put $ state { transactions  = tx : txs
+                      , counter       = succ count
+                      }
 
 getAllTx :: Tx () -> Redis [Transaction]
 getAllTx f = reverse . transactions <$> execStateT f defaultTxState
@@ -69,7 +73,8 @@ assertError :: TypeError -> Tx ()
 assertError err = do
     state <- State.get
     let errors = typeError state
-    State.put $ state { typeError = err : errors }
+    let count = counter state
+    State.put $ state { typeError = (count, err) : errors }
 
 lookupType :: Key -> Tx (Maybe Type)
 lookupType key = do
@@ -111,7 +116,7 @@ execTx f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx :: Tx () -> Redis (Either [TypeError] Reply)
+runTx :: Tx () -> Redis (Either [(Int, TypeError)] Reply)
 runTx f = do
     state <- execStateT f defaultTxState
 
