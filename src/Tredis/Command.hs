@@ -5,6 +5,7 @@ module Tredis.Command where
 import Tredis.Transaction
 import Data.ByteString hiding (map, unpack, pack, reverse)
 import Data.ByteString.Char8 (pack, unpack)
+import Data.Serialize as S hiding (get, put)
 
 --------------------------------------------------------------------------------
 --  String
@@ -21,7 +22,7 @@ append key val = do
 get :: Key -> Tx ()
 get key = insertCmd $ Get key
 
-set :: Key -> ByteString -> Tx ()
+set :: Serialize a => Key -> a -> Tx ()
 set key val = do
     assertType key StrType
     insertCmd $ Set key val

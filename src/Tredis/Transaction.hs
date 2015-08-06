@@ -2,11 +2,13 @@
 
 module Tredis.Transaction where
 
-import Data.ByteString hiding (map, unpack, pack, reverse)
-import Data.ByteString.Char8 (pack, unpack)
 import Control.Applicative
 import Control.Monad.State as State
-import Database.Redis as Redis hiding (Queued, Set)
+import Data.ByteString hiding (map, unpack, pack, reverse)
+import Data.ByteString.Char8 (pack, unpack)
+import Database.Redis as Redis hiding (Queued, Set, decode)
+import qualified Data.Serialize as S
+import           Data.Serialize (Serialize)
 import Data.Map as Map hiding (map)
 import Data.List as List
 
@@ -24,13 +26,15 @@ instance Show TypeError where
     show (Undeclared key) = "Undeclared: " ++ unpack key
     show (TypeMismatch key exp got) = "TypeMismatch: expect '" ++ show exp ++ "', got '" ++ show got ++ "'"
 
-data Command
-    = Set Key ByteString
-    | Get Key
-    | Del Key
-    | Incr Key
-    | Append Key ByteString
-    deriving (Show)
+data Command where
+    Set :: Serialize a => Key -> a -> Command
+    Append :: Key -> ByteString -> Command
+    Get :: Key -> Command
+    Del :: Key -> Command
+    Incr :: Key -> Command
+
+instance Show Command where
+    show (_) = "Command"
 
 --------------------------------------------------------------------------------
 --  TxState
@@ -92,16 +96,27 @@ checkType key typ = do
             True -> return ()
             False -> assertError (TypeMismatch key typ ty)
 
+encode :: Serialize a => a -> ByteString
+encode = S.encode
+
+decode :: Serialize a => ByteString -> Either String a
+decode = S.decode
+
 --------------------------------------------------------------------------------
 --  Tx
 --------------------------------------------------------------------------------
 
 toRedisCmd :: Command -> Redis (Either Reply Status)
-toRedisCmd (Set key val) = sendRequest ["SET", key, val]
+toRedisCmd (Set key val) = sendRequest ["SET", key, encode val]
 toRedisCmd (Get key)     = sendRequest ["GET", key]
 toRedisCmd (Del key)     = sendRequest ["DEL", key]
 toRedisCmd (Incr key)    = sendRequest ["INCR", key]
 toRedisCmd (Append key val) = sendRequest ["APPEND", key, val]
+
+decodeReply :: Serialize a => Reply -> [Either String a]
+decodeReply (MultiBulk (Just xs)) = xs >>= decodeReply
+decodeReply (Bulk (Just raw)) = return $ decode raw
+decodeReply others = error $ "decode reply error " ++ show others
 
 -- execute
 execTx :: Tx () -> Redis Reply
@@ -110,7 +125,7 @@ execTx f = do
     let commands = getAllCmds f                     -- get all commands
     let redisCommands = map toRedisCmd commands     -- make them Redis Commands
     sequence redisCommands                          -- run them all
-    exec                                            -- issue EXEC
+    exec
 
     where
         multi :: Redis (Either Reply Status)

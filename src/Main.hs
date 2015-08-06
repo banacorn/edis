@@ -22,9 +22,7 @@ main = do
     result <- runRedis conn $ do
 
         reply <- runTx $ do
-            setInt "a" 40
-            incr "a"
-            set "a" "haha"
+            set "a" True
             get "a"
             del "a"
 
