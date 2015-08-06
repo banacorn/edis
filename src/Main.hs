@@ -4,13 +4,13 @@ module Main where
 
 -- import Tredis as T
 
-import Tredis.Transaction as T
+import Tredis.Transaction
+import Tredis.Command
 
 import GHC.Generics
 import Data.Typeable
 import Database.Redis (connect, defaultConnectInfo, runRedis)
 import Data.ByteString
-import Database.Redis as R
 import Data.Serialize (Serialize)
 import Control.Monad.Trans (liftIO)
 import Control.Applicative
@@ -21,12 +21,12 @@ main = do
     conn <- connect defaultConnectInfo
     result <- runRedis conn $ do
 
-        reply <- T.runTx $ do
-            T.setInt "a" 40
-            T.incr "a"
-            T.set "a" "haha"
-            T.get "a"
-            T.del "a"
+        reply <- runTx $ do
+            setInt "a" 40
+            incr "a"
+            set "a" "haha"
+            get "a"
+            del "a"
 
         case reply of
             Right rs -> liftIO $ print rs

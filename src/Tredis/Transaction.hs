@@ -10,7 +10,7 @@ import Database.Redis as Redis hiding (Queued, Set)
 import Data.Map as Map hiding (map)
 import Data.List as List
 
-type Tx = StateT TxState Redis
+type Tx = State TxState
 type Key = ByteString
 
 data Type = IntType | StrType
@@ -24,11 +24,12 @@ instance Show TypeError where
     show (Undeclared key) = "Undeclared: " ++ unpack key
     show (TypeMismatch key exp got) = "TypeMismatch: expect '" ++ show exp ++ "', got '" ++ show got ++ "'"
 
-data Transaction
+data Command
     = Set Key ByteString
     | Get Key
     | Del Key
     | Incr Key
+    | Append Key ByteString
     deriving (Show)
 
 --------------------------------------------------------------------------------
@@ -36,7 +37,7 @@ data Transaction
 --------------------------------------------------------------------------------
 
 data TxState = TxState
-    {   transactions :: [Transaction]
+    {   commands :: [Command]
     ,   typeTable :: Map Key Type
     ,   typeError :: [(Int, TypeError)]
     ,   counter :: Int
@@ -45,17 +46,17 @@ data TxState = TxState
 defaultTxState :: TxState
 defaultTxState = TxState [] Map.empty [] 1
 
-insertTx :: Transaction -> Tx ()
-insertTx tx = do
+insertCmd :: Command -> Tx ()
+insertCmd cmd = do
     state <- State.get
-    let txs = transactions state
+    let cmds = commands state
     let count = counter state
-    State.put $ state { transactions  = tx : txs
-                      , counter       = succ count
+    State.put $ state { commands = cmd : cmds
+                      , counter  = succ count
                       }
 
-getAllTx :: Tx () -> Redis [Transaction]
-getAllTx f = reverse . transactions <$> execStateT f defaultTxState
+getAllCmds :: Tx () -> [Command]
+getAllCmds f = reverse $ commands $ execState f defaultTxState
 
 assertType :: Key -> Type -> Tx ()
 assertType key typ = do
@@ -95,18 +96,19 @@ checkType key typ = do
 --  Tx
 --------------------------------------------------------------------------------
 
-toRedisTx :: Transaction -> Redis (Either Reply Status)
-toRedisTx (Set key val) = sendRequest ["SET", key, val]
-toRedisTx (Get key)     = sendRequest ["GET", key]
-toRedisTx (Del key)     = sendRequest ["DEL", key]
-toRedisTx (Incr key)    = sendRequest ["INCR", key]
+toRedisCmd :: Command -> Redis (Either Reply Status)
+toRedisCmd (Set key val) = sendRequest ["SET", key, val]
+toRedisCmd (Get key)     = sendRequest ["GET", key]
+toRedisCmd (Del key)     = sendRequest ["DEL", key]
+toRedisCmd (Incr key)    = sendRequest ["INCR", key]
+toRedisCmd (Append key val) = sendRequest ["APPEND", key, val]
 
 -- execute
 execTx :: Tx () -> Redis Reply
 execTx f = do
     multi                                           -- issue MULTI
-    transactions <- getAllTx f                      -- get all transactions
-    let redisCommands = map toRedisTx transactions  -- make them Redis Commands
+    let commands = getAllCmds f                     -- get all commands
+    let redisCommands = map toRedisCmd commands     -- make them Redis Commands
     sequence redisCommands                          -- run them all
     exec                                            -- issue EXEC
 
@@ -118,41 +120,10 @@ execTx f = do
 
 runTx :: Tx () -> Redis (Either [(Int, TypeError)] Reply)
 runTx f = do
-    state <- execStateT f defaultTxState
+    let state = execState f defaultTxState
 
     -- see if there's any type error
     let errors = typeError state
     if List.null errors
         then Right <$> execTx f         -- if none, then execute
         else Left  <$> return errors    -- else return the errors
-
-
---------------------------------------------------------------------------------
---  Commands
---------------------------------------------------------------------------------
-
-declare :: Key -> Type -> Tx ()
-declare = assertType
-
-get :: Key -> Tx ()
-get key = insertTx $ Get key
-
-set :: Key -> ByteString -> Tx ()
-set key val = do
-    assertType key StrType
-    insertTx $ Set key val
-
-del :: Key -> Tx ()
-del key = do
-    removeType key
-    insertTx $ Del key
-
-setInt :: Key -> Integer -> Tx ()
-setInt key val = do
-    assertType key IntType
-    insertTx $ Set key (pack (show val))
-
-incr :: Key -> Tx ()
-incr key = do
-    checkType key IntType
-    insertTx $ Incr key
