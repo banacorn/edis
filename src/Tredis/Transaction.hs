@@ -2,6 +2,7 @@
 
 module Tredis.Transaction where
 
+import Data.Typeable
 import Control.Applicative
 import Control.Monad.State as State
 import Data.ByteString hiding (map, unpack, pack, reverse)
@@ -15,12 +16,9 @@ import Data.List as List
 type Tx = State TxState
 type Key = ByteString
 
-data Type = IntType | StrType
-    deriving (Show, Eq)
-
 data TypeError
     = Undeclared Key
-    | TypeMismatch Key Type Type
+    | TypeMismatch Key TypeRep TypeRep
 
 instance Show TypeError where
     show (Undeclared key) = "Undeclared: " ++ unpack key
@@ -42,7 +40,7 @@ instance Show Command where
 
 data TxState = TxState
     {   commands :: [Command]
-    ,   typeTable :: Map Key Type
+    ,   typeTable :: Map Key TypeRep
     ,   typeError :: [(Int, TypeError)]
     ,   counter :: Int
     }   deriving (Show)
@@ -62,11 +60,11 @@ insertCmd cmd = do
 getAllCmds :: Tx () -> [Command]
 getAllCmds f = reverse $ commands $ execState f defaultTxState
 
-assertType :: Key -> Type -> Tx ()
-assertType key typ = do
+assertType :: Typeable a => Key -> a -> Tx ()
+assertType key val = do
     state <- State.get
     let table = typeTable state
-    State.put $ state { typeTable = Map.insert key typ table }
+    State.put $ state { typeTable = Map.insert key (typeOf val) table }
 
 removeType :: Key -> Tx ()
 removeType key = do
@@ -81,13 +79,13 @@ assertError err = do
     let count = counter state
     State.put $ state { typeError = (count, err) : errors }
 
-lookupType :: Key -> Tx (Maybe Type)
+lookupType :: Key -> Tx (Maybe TypeRep)
 lookupType key = do
     state <- State.get
     let table = typeTable state
     return $ Map.lookup key table
 
-checkType :: Key -> Type -> Tx ()
+checkType :: Key -> TypeRep -> Tx ()
 checkType key typ = do
     result <- lookupType key
     case result of
