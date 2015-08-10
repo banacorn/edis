@@ -2,16 +2,18 @@
 
 module Tredis.Transaction where
 
-import Data.Typeable
-import Control.Applicative
-import Control.Monad.State as State
-import Data.ByteString hiding (map, unpack, pack, reverse)
-import Data.ByteString.Char8 (pack, unpack)
-import Database.Redis as Redis hiding (Queued, Set, decode)
+import           Data.Typeable
+import           Control.Applicative
+import           Control.Monad.State
+import qualified Data.ByteString as B
+import           Data.ByteString (ByteString)
+import           Data.ByteString.Char8 (pack, unpack)
 import qualified Data.Serialize as S
 import           Data.Serialize (Serialize)
-import Data.Map as Map hiding (map)
-import Data.List as List
+import qualified Data.Map as Map
+import           Data.Map (Map)
+import qualified Database.Redis as Redis
+import           Database.Redis (Redis, Reply(..), sendRequest, Status)
 
 type Tx = State TxState
 type Key = ByteString
@@ -52,7 +54,7 @@ instance Monad Queued where
                                 x' <- x rs
                                 let Queued f' = f x'
                                 f' rs
-                                
+
 --------------------------------------------------------------------------------
 --  TxState
 --------------------------------------------------------------------------------
@@ -69,10 +71,10 @@ defaultTxState = TxState [] Map.empty [] 1
 
 insertCmd :: Command -> Tx ()
 insertCmd cmd = do
-    state <- State.get
+    state <- get
     let cmds = commands state
     let count = counter state
-    State.put $ state { commands = cmd : cmds
+    put $ state { commands = cmd : cmds
                       , counter  = succ count
                       }
 
@@ -81,26 +83,26 @@ getAllCmds f = reverse $ commands $ execState f defaultTxState
 
 assertType :: Typeable a => Key -> a -> Tx ()
 assertType key val = do
-    state <- State.get
+    state <- get
     let table = typeTable state
-    State.put $ state { typeTable = Map.insert key (typeOf val) table }
+    put $ state { typeTable = Map.insert key (typeOf val) table }
 
 removeType :: Key -> Tx ()
 removeType key = do
-    state <- State.get
+    state <- get
     let table = typeTable state
-    State.put $ state { typeTable = Map.delete key table }
+    put $ state { typeTable = Map.delete key table }
 
 assertError :: TypeError -> Tx ()
 assertError err = do
-    state <- State.get
+    state <- get
     let errors = typeError state
     let count = counter state
-    State.put $ state { typeError = (count, err) : errors }
+    put $ state { typeError = (count, err) : errors }
 
 lookupType :: Key -> Tx (Maybe TypeRep)
 lookupType key = do
-    state <- State.get
+    state <- get
     let table = typeTable state
     return $ Map.lookup key table
 
@@ -156,6 +158,6 @@ runTx f = do
 
     -- see if there's any type error
     let errors = typeError state
-    if List.null errors
+    if null errors
         then Right <$> execTx f         -- if none, then execute
         else Left  <$> return errors    -- else return the errors

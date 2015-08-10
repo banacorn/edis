@@ -4,9 +4,10 @@ module Tredis.Command where
 
 import Tredis.Transaction
 import Data.Typeable
-import Data.ByteString hiding (map, unpack, pack, reverse)
-import Data.ByteString.Char8 (pack, unpack)
-import Data.Serialize as S hiding (get, put)
+import qualified Data.ByteString as B
+import           Data.ByteString (ByteString)
+import           Data.ByteString.Char8 (pack, unpack)
+import           Data.Serialize (Serialize)
 
 --------------------------------------------------------------------------------
 --  String
