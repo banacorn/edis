@@ -32,6 +32,25 @@ data Command
     | Append Key ByteString
     deriving (Show)
 
+data Queued a = Queued ([Reply] -> Either String a)
+
+instance Functor Queued where
+    fmap f (Queued g) = Queued (fmap f . g)
+
+instance Applicative Queued where
+    pure x                = Queued (const $ Right x)
+    Queued f <*> Queued x = Queued $ \rs -> do
+                                        f' <- f rs
+                                        x' <- x rs
+                                        return (f' x')
+
+instance Monad Queued where
+    return         = pure
+    Queued x >>= f = Queued $ \rs -> do
+                                x' <- x rs
+                                let Queued f' = f x'
+                                f' rs
+                                
 --------------------------------------------------------------------------------
 --  TxState
 --------------------------------------------------------------------------------
