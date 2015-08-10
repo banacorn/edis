@@ -18,20 +18,20 @@ import           Data.Serialize (Serialize)
 --     assertType key StrType
 --     insertCmd $ Append key val
 
-get :: Key -> Tx ()
+get :: Serialize a => Key -> Tx (Queued a)
 get key = insertCmd $ Get key
 
-set :: (Serialize a, Typeable a) => Key -> a -> Tx ()
+set :: (Serialize a, Typeable a) => Key -> a -> Tx (Queued a)
 set key val = do
     assertType key val
     insertCmd $ Set key val
 
-del :: Key -> Tx ()
+del :: Serialize a => Key -> Tx (Queued a)
 del key = do
     removeType key
     insertCmd $ Del key
 
-incr :: Key -> Tx ()
+incr :: Serialize a => Key -> Tx (Queued a)
 incr key = do
     checkType key (typeOf (1 :: Int))
     insertCmd $ Incr key

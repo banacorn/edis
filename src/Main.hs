@@ -10,7 +10,7 @@ import Tredis.Command
 import GHC.Generics
 import Data.Typeable
 import Database.Redis (connect, defaultConnectInfo, runRedis)
-import Data.ByteString
+-- import Data.ByteString
 import Data.Serialize (Serialize)
 import Control.Monad.Trans (liftIO)
 import Control.Applicative
@@ -22,12 +22,15 @@ main = do
     result <- runRedis conn $ do
 
         reply <- runTx $ do
-            set "a" True
-            get "a"
-            del "a"
+            set "a" (5 :: Int)
+            a <- get "a" :: Tx (Queued Int)
+            set "a" (6 :: Int)
+            a' <- get "a" :: Tx (Queued Int)
+            return $ (,) <$> a <*> a'
 
         case reply of
-            Right rs -> liftIO $ print rs
+            Right (Right result) -> liftIO $ print result
+            Right (Left parseEr) -> liftIO $ putStrLn parseEr
             Left err -> liftIO $ print err
 
     return ()

@@ -8,8 +8,7 @@ import           Control.Monad.State
 import qualified Data.ByteString as B
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (pack, unpack)
-import qualified Data.Serialize as S
-import           Data.Serialize (Serialize)
+import           Data.Serialize (Serialize, encode, decode)
 import qualified Data.Map as Map
 import           Data.Map (Map)
 import qualified Database.Redis as Redis
@@ -67,19 +66,17 @@ data TxState = TxState
     }   deriving (Show)
 
 defaultTxState :: TxState
-defaultTxState = TxState [] Map.empty [] 1
+defaultTxState = TxState [] Map.empty [] 0
 
-insertCmd :: Command -> Tx ()
+insertCmd :: Serialize a => Command -> Tx (Queued a)
 insertCmd cmd = do
     state <- get
     let cmds = commands state
     let count = counter state
     put $ state { commands = cmd : cmds
-                      , counter  = succ count
-                      }
-
-getAllCmds :: Tx () -> [Command]
-getAllCmds f = reverse $ commands $ execState f defaultTxState
+                , counter  = succ count
+                }
+    return $ Queued $ \replies -> decodeReply (replies !! count)
 
 assertType :: Typeable a => Key -> a -> Tx ()
 assertType key val = do
@@ -115,12 +112,6 @@ checkType key typ = do
             True -> return ()
             False -> assertError (TypeMismatch key typ ty)
 
-encode :: Serialize a => a -> ByteString
-encode = S.encode
-
-decode :: Serialize a => ByteString -> Either String a
-decode = S.decode
-
 --------------------------------------------------------------------------------
 --  Tx
 --------------------------------------------------------------------------------
@@ -132,19 +123,30 @@ toRedisCmd (Del key)     = sendRequest ["DEL", key]
 toRedisCmd (Incr key)    = sendRequest ["INCR", key]
 toRedisCmd (Append key val) = sendRequest ["APPEND", key, val]
 
-decodeReply :: Serialize a => Reply -> [Either String a]
-decodeReply (MultiBulk (Just xs)) = xs >>= decodeReply
-decodeReply (Bulk (Just raw)) = return $ decode raw
+decodeReply :: Serialize a => Reply -> Either String a
+decodeReply (Bulk (Just raw)) = decode raw
 decodeReply others = error $ "decode reply error " ++ show others
 
 -- execute
-execTx :: Tx () -> Redis Reply
+execTx :: Serialize a => Tx (Queued a) -> Redis (Either String a)
 execTx f = do
-    multi                                           -- issue MULTI
-    let commands = getAllCmds f                     -- get all commands
-    let redisCommands = map toRedisCmd commands     -- make them Redis Commands
-    sequence redisCommands                          -- run them all
-    exec
+
+    -- issue MULTI
+    multi
+
+    -- extract states
+    let (Queued queued, state) = runState f defaultTxState
+    let (redisCommands) = map toRedisCmd (reverse $ commands state)
+
+    -- run them all
+    sequence redisCommands
+
+    -- issue EXEC
+    execResult <- exec
+    case execResult of
+        MultiBulk (Just replies) -> do
+            return (queued replies)
+        _ -> error "something went wrong"
 
     where
         multi :: Redis (Either Reply Status)
@@ -152,7 +154,7 @@ execTx f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx :: Tx () -> Redis (Either [(Int, TypeError)] Reply)
+runTx :: Serialize a => Tx (Queued a) -> Redis (Either [(Int, TypeError)] (Either String a))
 runTx f = do
     let state = execState f defaultTxState
 
