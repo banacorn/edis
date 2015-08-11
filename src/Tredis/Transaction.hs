@@ -72,7 +72,13 @@ assertType :: Typeable a => Key -> a -> Tx ()
 assertType key val = do
     state <- get
     let table = typeTable state
-    put $ state { typeTable = Map.insert key (typeOf val) table }
+    let original = Map.lookup key table
+    let valType = typeOf val
+    case original of
+        Just ty -> if valType == ty
+            then put $ state { typeTable = Map.insert key valType table }
+            else assertError (TypeMismatch key valType ty)
+        Nothing -> put $ state { typeTable = Map.insert key valType table }
 
 removeType :: Key -> Tx ()
 removeType key = do

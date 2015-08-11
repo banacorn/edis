@@ -36,3 +36,11 @@ incr :: Key -> Tx (Queued ())
 incr key = do
     checkType key (typeOf (0 :: Int))
     insertCmd ["INCR", key]
+
+lpush :: (Serialize a, Typeable a) => Key -> a -> Tx (Queued ())
+lpush key val = do
+    assertType key [val]
+    insertCmd ["LPUSH", key, encode val]
+
+lpop :: Serialize a => Key -> Tx (Queued a)
+lpop key = insertCmd ["LPOP", key]
