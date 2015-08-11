@@ -20,13 +20,13 @@ main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
     result <- runRedis conn $ do
-
         reply <- runTx $ do
-            set "a" (5 :: Int)
-            a <- get "a" :: Tx (Queued Int)
-            set "a" (6 :: Int)
-            a' <- get "a" :: Tx (Queued Int)
-            return $ (,) <$> a <*> a'
+            -- set "a" (5 :: Int)
+            -- a <- get "a" :: Tx (Queued Int)
+            -- incr "a" :: Tx (Queued Int)
+            -- set "a" (6 :: Int)
+            -- a' <- get "a" :: Tx (Queued Int)
+            -- return $ (,) <$> a <*> a'
 
         case reply of
             Right (Right result) -> liftIO $ print result

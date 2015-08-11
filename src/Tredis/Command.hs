@@ -33,5 +33,5 @@ del key = do
 
 incr :: Serialize a => Key -> Tx (Queued a)
 incr key = do
-    checkType key (typeOf (1 :: Int))
+    checkType key (typeOf (0 :: Int))
     insertCmd $ Incr key

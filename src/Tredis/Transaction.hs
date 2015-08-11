@@ -143,6 +143,9 @@ execTx f = do
 
     -- issue EXEC
     execResult <- exec
+
+    liftIO $ print execResult
+
     case execResult of
         MultiBulk (Just replies) -> do
             return (queued replies)
