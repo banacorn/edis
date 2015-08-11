@@ -31,6 +31,7 @@ data Command where
     Get :: Key -> Command
     Del :: Key -> Command
     Incr :: Key -> Command
+    Decr :: Key -> Command
 
 instance Show Command where
     show (_) = "Command"
@@ -121,6 +122,7 @@ toRedisCmd (Set key val) = sendRequest ["SET", key, encode val]
 toRedisCmd (Get key)     = sendRequest ["GET", key]
 toRedisCmd (Del key)     = sendRequest ["DEL", key]
 toRedisCmd (Incr key)    = sendRequest ["INCR", key]
+toRedisCmd (Decr key)    = sendRequest ["DECR", key]
 toRedisCmd (Append key val) = sendRequest ["APPEND", key, val]
 
 decodeReply :: Serialize a => Reply -> Either Reply a
@@ -166,3 +168,7 @@ runTx conn f = runRedis conn $ do
     if null errors
         then Right <$> execTx f         -- if none, then execute
         else Left  <$> return errors    -- else return the errors
+
+-- re-export Redis shit
+connect = Redis.connect
+defaultConnectInfo = Redis.defaultConnectInfo

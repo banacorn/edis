@@ -7,12 +7,8 @@ module Main where
 import Tredis.Transaction
 import Tredis.Command
 
-import GHC.Generics
-import Data.Typeable
-import Database.Redis (connect, defaultConnectInfo, runRedis)
--- import Data.ByteString
 import Data.Serialize (Serialize)
-import Control.Monad.Trans (liftIO)
+-- import Control.Monad.Trans (liftIO)
 import Control.Applicative
 
 import Data.Int (Int64)
@@ -28,7 +24,7 @@ main = do
         return $ (,) <$> a <*> a
 
     case result of
-        Left err -> liftIO $ print err
-        Right ok -> liftIO $ print ok
+        Left err -> print err
+        Right ok -> print ok
 
     return ()
