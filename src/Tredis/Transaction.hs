@@ -25,17 +25,6 @@ instance Show TypeError where
     show (Undeclared key) = "Undeclared: " ++ unpack key
     show (TypeMismatch key exp got) = "TypeMismatch: expect '" ++ show exp ++ "', got '" ++ show got ++ "'"
 
-data Command where
-    Set :: Serialize a => Key -> a -> Command
-    Append :: Key -> ByteString -> Command
-    Get :: Key -> Command
-    Del :: Key -> Command
-    Incr :: Key -> Command
-    Decr :: Key -> Command
-
-instance Show Command where
-    show (_) = "Command"
-
 data Queued a = Queued ([Reply] -> Either Reply a)
 
 instance Functor Queued where
@@ -60,21 +49,21 @@ instance Monad Queued where
 --------------------------------------------------------------------------------
 
 data TxState = TxState
-    {   commands :: [Command]
+    {   commands :: [Redis (Either Reply Status)]
     ,   typeTable :: Map Key TypeRep
     ,   typeError :: [(Int, TypeError)]
     ,   counter :: Int
-    }   deriving (Show)
+    }
 
 defaultTxState :: TxState
 defaultTxState = TxState [] Map.empty [] 0
 
-insertCmd :: Serialize a => Command -> Tx (Queued a)
-insertCmd cmd = do
+insertCmd :: Serialize a => [ByteString] -> Tx (Queued a)
+insertCmd args = do
     state <- get
     let cmds = commands state
     let count = counter state
-    put $ state { commands = cmd : cmds
+    put $ state { commands = sendRequest args : cmds
                 , counter  = succ count
                 }
     return $ Queued $ \replies -> decodeReply (replies !! count)
@@ -117,14 +106,6 @@ checkType key typ = do
 --  Tx
 --------------------------------------------------------------------------------
 
-toRedisCmd :: Command -> Redis (Either Reply Status)
-toRedisCmd (Set key val) = sendRequest ["SET", key, encode val]
-toRedisCmd (Get key)     = sendRequest ["GET", key]
-toRedisCmd (Del key)     = sendRequest ["DEL", key]
-toRedisCmd (Incr key)    = sendRequest ["INCR", key]
-toRedisCmd (Decr key)    = sendRequest ["DECR", key]
-toRedisCmd (Append key val) = sendRequest ["APPEND", key, val]
-
 decodeReply :: Serialize a => Reply -> Either Reply a
 decodeReply (Bulk (Just raw)) = case decode raw of
     Left decodeErr -> Left $ Error (pack decodeErr)
@@ -141,7 +122,7 @@ execTx f = do
 
     -- extract states
     let (Queued queued, state) = runState f defaultTxState
-    let (redisCommands) = map toRedisCmd (reverse $ commands state)
+    let (redisCommands) = reverse $ commands state
 
     -- run them all
     sequence redisCommands
