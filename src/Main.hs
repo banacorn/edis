@@ -21,7 +21,7 @@ main = do
     conn <- connect defaultConnectInfo
     result <- runRedis conn $ do
         reply <- runTx $ do
-            -- set "a" (5 :: Int)
+            set "a" (5 :: Int)
             -- a <- get "a" :: Tx (Queued Int)
             -- incr "a" :: Tx (Queued Int)
             -- set "a" (6 :: Int)
@@ -29,8 +29,7 @@ main = do
             -- return $ (,) <$> a <*> a'
 
         case reply of
-            Right (Right result) -> liftIO $ print result
-            Right (Left parseEr) -> liftIO $ putStrLn parseEr
+            Right result -> liftIO $ print result
             Left err -> liftIO $ print err
 
     return ()

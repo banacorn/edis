@@ -35,7 +35,7 @@ data Command where
 instance Show Command where
     show (_) = "Command"
 
-data Queued a = Queued ([Reply] -> Either String a)
+data Queued a = Queued ([Reply] -> Either Reply a)
 
 instance Functor Queued where
     fmap f (Queued g) = Queued (fmap f . g)
@@ -123,12 +123,15 @@ toRedisCmd (Del key)     = sendRequest ["DEL", key]
 toRedisCmd (Incr key)    = sendRequest ["INCR", key]
 toRedisCmd (Append key val) = sendRequest ["APPEND", key, val]
 
-decodeReply :: Serialize a => Reply -> Either String a
-decodeReply (Bulk (Just raw)) = decode raw
-decodeReply others = error $ "decode reply error " ++ show others
+decodeReply :: Serialize a => Reply -> Either Reply a
+decodeReply (Bulk (Just raw)) = case decode raw of
+    Left decodeErr -> Left $ Error (pack decodeErr)
+    Right result   -> Right result
+decodeReply others = Left others
+-- decodeReply others = error $ "decode reply error " ++ show others
 
 -- execute
-execTx :: Serialize a => Tx (Queued a) -> Redis (Either String a)
+execTx :: Serialize a => Tx (Queued a) -> Redis (Either Reply a)
 execTx f = do
 
     -- issue MULTI
@@ -143,9 +146,6 @@ execTx f = do
 
     -- issue EXEC
     execResult <- exec
-
-    liftIO $ print execResult
-
     case execResult of
         MultiBulk (Just replies) -> do
             return (queued replies)
@@ -157,7 +157,7 @@ execTx f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx :: Serialize a => Tx (Queued a) -> Redis (Either [(Int, TypeError)] (Either String a))
+runTx :: Serialize a => Tx (Queued a) -> Redis (Either [(Int, TypeError)] (Either Reply a))
 runTx f = do
     let state = execState f defaultTxState
 
