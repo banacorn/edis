@@ -15,11 +15,11 @@ main = do
 
         del "a"
         declare "a"     :: Tx [Bool]
-        -- set "a" False                       -- type error!
-        -- get "a"         :: Tx (Queued Bool) -- type error!
+        -- set "a" False                        -- type error!
+        -- get "a"         :: Tx (Deferred Bool) -- type error!
         lpush "a" True
         lpush "a" False
-        lpop "a" :: Tx (Queued Int)
+        lpop "a" :: Tx (Deferred Int)
 
     case result of
         Left err -> print err

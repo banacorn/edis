@@ -25,27 +25,27 @@ instance Show TypeError where
     show (Undeclared key) = "Undeclared: " ++ unpack key
     show (TypeMismatch key exp got) = "TypeMismatch: expect '" ++ show exp ++ "', got '" ++ show got ++ "'"
 
-data Queued a = Queued ([Reply] -> Either Reply a)
+data Deferred a = Deferred ([Reply] -> Either Reply a)
     deriving Typeable
 
-instance Functor Queued where
-    fmap f (Queued g) = Queued (fmap f . g)
+instance Functor Deferred where
+    fmap f (Deferred g) = Deferred (fmap f . g)
 
-instance Applicative Queued where
-    pure x                = Queued (const $ Right x)
-    Queued f <*> Queued x = Queued $ \rs -> do
+instance Applicative Deferred where
+    pure x                = Deferred (const $ Right x)
+    Deferred f <*> Deferred x = Deferred $ \rs -> do
                                         f' <- f rs
                                         x' <- x rs
                                         return (f' x')
 
-instance Monad Queued where
+instance Monad Deferred where
     return         = pure
-    Queued x >>= f = Queued $ \rs -> do
+    Deferred x >>= f = Deferred $ \rs -> do
                                 x' <- x rs
-                                let Queued f' = f x'
+                                let Deferred f' = f x'
                                 f' rs
 
--- instance Typeable Queued
+-- instance Typeable Deferred
 
 --------------------------------------------------------------------------------
 --  TxState
@@ -62,7 +62,7 @@ defaultTxState :: TxState
 defaultTxState = TxState [] Map.empty [] 0
 
 -- commands
-insertCmd :: Serialize a => [ByteString] -> Tx (Queued a)
+insertCmd :: Serialize a => [ByteString] -> Tx (Deferred a)
 insertCmd args = do
     state <- get
     let cmds = commands state
@@ -70,7 +70,7 @@ insertCmd args = do
     put $ state { commands = sendRequest args : cmds
                 , counter  = succ count
                 }
-    return $ Queued $ \replies -> decodeReply (replies !! count)
+    return $ Deferred $ \replies -> decodeReply (replies !! count)
 
 -- type
 removeType :: Key -> Tx ()
@@ -126,8 +126,8 @@ checkType key got = do
 
 -- checkType
 
-queuedValueType :: Typeable a => Queued a -> TypeRep
-queuedValueType q = head (typeRepArgs (typeOf q))
+deferredValueType :: Typeable a => Deferred a -> TypeRep
+deferredValueType q = head (typeRepArgs (typeOf q))
 
 buildListType :: TypeRep -> TypeRep
 buildListType arg = mkTyConApp (typeRepTyCon $ typeOf [()]) [arg]
@@ -143,14 +143,14 @@ decodeReply (Bulk (Just raw)) = case decode raw of
 decodeReply others = Left others
 
 -- execute
-execTx :: Serialize a => Tx (Queued a) -> Redis (Either Reply a)
+execTx :: Serialize a => Tx (Deferred a) -> Redis (Either Reply a)
 execTx f = do
 
     -- issue MULTI
     multi
 
     -- extract states
-    let (Queued queued, state) = runState f defaultTxState
+    let (Deferred deferred, state) = runState f defaultTxState
     let (redisCommands) = reverse $ commands state
 
     -- run them all
@@ -160,7 +160,7 @@ execTx f = do
     execResult <- exec
     case execResult of
         MultiBulk (Just replies) -> do
-            return (queued replies)
+            return (deferred replies)
         _ -> error "something went wrong"
 
     where
@@ -169,7 +169,7 @@ execTx f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx :: Serialize a => Redis.Connection -> Tx (Queued a) -> IO (Either [(Int, TypeError)] (Either Reply a))
+runTx :: Serialize a => Redis.Connection -> Tx (Deferred a) -> IO (Either [(Int, TypeError)] (Either Reply a))
 runTx conn f = runRedis conn $ do
     let state = execState f defaultTxState
 
