@@ -22,17 +22,17 @@ append key val = do
 get :: Serialize a => Key -> Tx (Queued a)
 get key = insertCmd ["GET", key]
 
-set :: (Serialize a, Typeable a) => Key -> a -> Tx (Queued a)
+set :: (Serialize a, Typeable a) => Key -> a -> Tx (Queued ())
 set key val = do
     assertType key val
     insertCmd ["SET", key, encode val]
 
-del :: Serialize a => Key -> Tx (Queued a)
+del :: Key -> Tx (Queued ())
 del key = do
     removeType key
     insertCmd ["DEL", key]
 
-incr :: Serialize a => Key -> Tx (Queued a)
+incr :: Key -> Tx (Queued ())
 incr key = do
     checkType key (typeOf (0 :: Int))
     insertCmd ["INCR", key]

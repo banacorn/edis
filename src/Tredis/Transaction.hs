@@ -111,7 +111,6 @@ decodeReply (Bulk (Just raw)) = case decode raw of
     Left decodeErr -> Left $ Error (pack decodeErr)
     Right result   -> Right result
 decodeReply others = Left others
--- decodeReply others = error $ "decode reply error " ++ show others
 
 -- execute
 execTx :: Serialize a => Tx (Queued a) -> Redis (Either Reply a)
