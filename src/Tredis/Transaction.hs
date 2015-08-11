@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, GADTs #-}
+{-# LANGUAGE OverloadedStrings, GADTs, DeriveDataTypeable #-}
 
 module Tredis.Transaction where
 
@@ -26,6 +26,7 @@ instance Show TypeError where
     show (TypeMismatch key exp got) = "TypeMismatch: expect '" ++ show exp ++ "', got '" ++ show got ++ "'"
 
 data Queued a = Queued ([Reply] -> Either Reply a)
+    deriving Typeable
 
 instance Functor Queued where
     fmap f (Queued g) = Queued (fmap f . g)
@@ -44,6 +45,8 @@ instance Monad Queued where
                                 let Queued f' = f x'
                                 f' rs
 
+-- instance Typeable Queued
+
 --------------------------------------------------------------------------------
 --  TxState
 --------------------------------------------------------------------------------
@@ -58,6 +61,7 @@ data TxState = TxState
 defaultTxState :: TxState
 defaultTxState = TxState [] Map.empty [] 0
 
+-- commands
 insertCmd :: Serialize a => [ByteString] -> Tx (Queued a)
 insertCmd args = do
     state <- get
@@ -68,30 +72,11 @@ insertCmd args = do
                 }
     return $ Queued $ \replies -> decodeReply (replies !! count)
 
-assertType :: Typeable a => Key -> a -> Tx ()
-assertType key val = do
-    state <- get
-    let table = typeTable state
-    let original = Map.lookup key table
-    let valType = typeOf val
-    case original of
-        Just ty -> if valType == ty
-            then put $ state { typeTable = Map.insert key valType table }
-            else assertError (TypeMismatch key valType ty)
-        Nothing -> put $ state { typeTable = Map.insert key valType table }
-
 removeType :: Key -> Tx ()
 removeType key = do
     state <- get
     let table = typeTable state
     put $ state { typeTable = Map.delete key table }
-
-assertError :: TypeError -> Tx ()
-assertError err = do
-    state <- get
-    let errors = typeError state
-    let count = counter state
-    put $ state { typeError = (count, err) : errors }
 
 lookupType :: Key -> Tx (Maybe TypeRep)
 lookupType key = do
@@ -99,14 +84,41 @@ lookupType key = do
     let table = typeTable state
     return $ Map.lookup key table
 
-checkType :: Key -> TypeRep -> Tx ()
-checkType key typ = do
+insertType :: Key -> TypeRep -> Tx ()
+insertType key typeRep = do
+    state <- get
+    let table = typeTable state
+    put $ state { typeTable = Map.insert key typeRep table }
+
+
+-- types
+assertTypeRep :: Key -> TypeRep -> Tx ()
+assertTypeRep key typeRep = do
+    typeError <- checkType key typeRep
+    case typeError of
+        Nothing                   -> insertType key typeRep -- already asserted
+        Just (Undeclared _)       -> insertType key typeRep -- not asserted yet
+        Just (TypeMismatch k x y) -> assertError $ TypeMismatch k x y
+
+assertTypeVal :: Typeable a => Key -> a -> Tx ()
+assertTypeVal key val = assertTypeRep key (typeOf val)
+
+checkType :: Key -> TypeRep -> Tx (Maybe TypeError)
+checkType key expected = do
     result <- lookupType key
     case result of
-        Nothing -> assertError (Undeclared key)
-        Just ty -> case ty == typ of
-            True -> return ()
-            False -> assertError (TypeMismatch key typ ty)
+        Nothing -> do
+            return $ Just (Undeclared key)
+        Just got -> if expected == got
+            then return $ Nothing
+            else return $ Just (TypeMismatch key expected got)
+
+assertError :: TypeError -> Tx ()
+assertError err = do
+    state <- get
+    let errors = typeError state
+    let count = counter state
+    put $ state { typeError = (count, err) : errors }
 
 --------------------------------------------------------------------------------
 --  Tx
@@ -153,7 +165,7 @@ runTx conn f = runRedis conn $ do
     let errors = typeError state
     if null errors
         then Right <$> execTx f         -- if none, then execute
-        else Left  <$> return errors    -- else return the errors
+        else Left  <$> return (reverse errors)    -- else return the errors
 
 -- re-export Redis shit
 connect = Redis.connect
