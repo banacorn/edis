@@ -72,6 +72,7 @@ insertCmd args = do
                 }
     return $ Queued $ \replies -> decodeReply (replies !! count)
 
+-- type
 removeType :: Key -> Tx ()
 removeType key = do
     state <- get
@@ -90,35 +91,46 @@ insertType key typeRep = do
     let table = typeTable state
     put $ state { typeTable = Map.insert key typeRep table }
 
-
--- types
-assertTypeRep :: Key -> TypeRep -> Tx ()
-assertTypeRep key typeRep = do
-    typeError <- checkType key typeRep
-    case typeError of
-        Nothing                   -> insertType key typeRep -- already asserted
-        Just (Undeclared _)       -> insertType key typeRep -- not asserted yet
-        Just (TypeMismatch k x y) -> assertError $ TypeMismatch k x y
-
-assertTypeVal :: Typeable a => Key -> a -> Tx ()
-assertTypeVal key val = assertTypeRep key (typeOf val)
-
-checkType :: Key -> TypeRep -> Tx (Maybe TypeError)
-checkType key expected = do
-    result <- lookupType key
-    case result of
-        Nothing -> do
-            return $ Just (Undeclared key)
-        Just got -> if expected == got
-            then return $ Nothing
-            else return $ Just (TypeMismatch key expected got)
-
+-- type error
 assertError :: TypeError -> Tx ()
 assertError err = do
     state <- get
     let errors = typeError state
     let count = counter state
     put $ state { typeError = (count, err) : errors }
+
+-- type stuffs
+declareType :: Key -> TypeRep -> Tx ()
+declareType key typeRep = do
+    typeError <- checkType key typeRep
+    case typeError of
+        Nothing                   -> insertType key typeRep -- already asserted
+        Just (Undeclared _)       -> insertType key typeRep -- not asserted yet
+        Just (TypeMismatch k x y) -> assertError $ TypeMismatch k x y
+
+declareTypeOfVal :: Typeable a => Key -> a -> Tx ()
+declareTypeOfVal key val = declareType key (typeOf val)
+
+(=::) :: Typeable a => Key -> a -> Tx ()
+(=::) = declareTypeOfVal
+
+checkType :: Key -> TypeRep -> Tx (Maybe TypeError)
+checkType key got = do
+    result <- lookupType key
+    case result of
+        Nothing -> do
+            return $ Just (Undeclared key)
+        Just expected -> if expected == got
+            then return $ Nothing
+            else return $ Just (TypeMismatch key expected got)
+
+-- checkType
+
+queuedValueType :: Typeable a => Queued a -> TypeRep
+queuedValueType q = head (typeRepArgs (typeOf q))
+
+buildListType :: TypeRep -> TypeRep
+buildListType arg = mkTyConApp (typeRepTyCon $ typeOf [()]) [arg]
 
 --------------------------------------------------------------------------------
 --  Tx

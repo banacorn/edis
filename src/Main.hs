@@ -12,13 +12,14 @@ main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
     result <- runTx conn $ do
-        -- set "a" True
-        declare "a" :: Tx Int
-        -- return ()
-        -- get "a" :: Tx (Queued Int)
-        -- del "a"
+
+        del "a"
+        declare "a"     :: Tx [Bool]
+        -- set "a" False                       -- type error!
+        -- get "a"         :: Tx (Queued Bool) -- type error!
+        lpush "a" True
         lpush "a" False
-        lpop "a" :: Tx (Queued Bool)
+        lpop "a" :: Tx (Queued Int)
 
     case result of
         Left err -> print err
