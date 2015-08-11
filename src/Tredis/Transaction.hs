@@ -12,7 +12,7 @@ import           Data.Serialize (Serialize, encode, decode)
 import qualified Data.Map as Map
 import           Data.Map (Map)
 import qualified Database.Redis as Redis
-import           Database.Redis (Redis, Reply(..), sendRequest, Status)
+import           Database.Redis (Redis, runRedis, Reply(..), sendRequest, Status)
 
 type Tx = State TxState
 type Key = ByteString
@@ -157,8 +157,8 @@ execTx f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx :: Serialize a => Tx (Queued a) -> Redis (Either [(Int, TypeError)] (Either Reply a))
-runTx f = do
+runTx :: Serialize a => Redis.Connection -> Tx (Queued a) -> IO (Either [(Int, TypeError)] (Either Reply a))
+runTx conn f = runRedis conn $ do
     let state = execState f defaultTxState
 
     -- see if there's any type error

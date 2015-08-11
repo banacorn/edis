@@ -13,10 +13,10 @@ import           Data.Serialize (Serialize)
 --  String
 --------------------------------------------------------------------------------
 
--- append :: Key -> ByteString -> Tx ()
--- append key val = do
---     assertType key StrType
---     insertCmd $ Append key val
+append :: Serialize a => Key -> ByteString -> Tx (Queued a)
+append key val = do
+    checkType key (typeOf ("" :: ByteString))
+    insertCmd $ Append key val
 
 get :: Serialize a => Key -> Tx (Queued a)
 get key = insertCmd $ Get key

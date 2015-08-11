@@ -19,17 +19,16 @@ import Data.Int (Int64)
 main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
-    result <- runRedis conn $ do
-        reply <- runTx $ do
-            set "a" (5 :: Int)
-            -- a <- get "a" :: Tx (Queued Int)
-            -- incr "a" :: Tx (Queued Int)
-            -- set "a" (6 :: Int)
-            -- a' <- get "a" :: Tx (Queued Int)
-            -- return $ (,) <$> a <*> a'
+    result <- runTx conn $ do
+        -- b <- set "a" (5 :: Int)
+        a <- get "a" :: Tx (Queued Int)
+        -- incr "a" :: Tx (Queued Int)
+        -- set "a" (6 :: Int)
+        -- a' <- get "a" :: Tx (Queued Int)
+        return $ (,) <$> a <*> a
 
-        case reply of
-            Right result -> liftIO $ print result
-            Left err -> liftIO $ print err
+    case result of
+        Left err -> liftIO $ print err
+        Right ok -> liftIO $ print ok
 
     return ()
