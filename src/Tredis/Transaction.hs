@@ -26,7 +26,7 @@ instance Show TypeError where
     show (Undeclared key) = "Undeclared: " ++ unpack key
     show (TypeMismatch key exp got) = "TypeMismatch: expect '" ++ show exp ++ "', got '" ++ show got ++ "'"
 
-data Deferred a = Deferred ([Reply] -> Either Reply a)
+data Deferred a = Deferred ([Reply] -> Either String a)
     deriving Typeable
 
 instance Functor Deferred where
@@ -76,17 +76,15 @@ insertCommand cmd = do
 sendCommand :: Serialize a => [ByteString] -> Tx (Deferred a)
 sendCommand = sendCommand' decodeReply
 
-sendCommand' :: Serialize a => (Reply -> Either Reply a) -> [ByteString] -> Tx (Deferred a)
+sendCommand' :: Serialize a => (Reply -> Either String a) -> [ByteString] -> Tx (Deferred a)
 sendCommand' decoder cmd = do
     count <- insertCommand cmd
     return $ Deferred (decoder . select count)
     where   select = flip (!!)
 
-decodeReply :: Serialize a => Reply -> Either Reply a
-decodeReply (Bulk (Just raw)) = case S.decode raw of
-    Left decodeErr -> Left $ Error (pack decodeErr)
-    Right result   -> Right result
-decodeReply others = Left others
+decodeReply :: Serialize a => Reply -> Either String a
+decodeReply (Bulk (Just raw)) = S.decode raw
+decodeReply others = Left (show others)
 
 
 
@@ -156,7 +154,7 @@ buildListType arg = mkTyConApp (typeRepTyCon $ typeOf [()]) [arg]
 --------------------------------------------------------------------------------
 
 -- execute
-execTx :: Serialize a => Tx (Deferred a) -> Redis (Either Reply a)
+execTx :: Serialize a => Tx (Deferred a) -> Redis (Either String a)
 execTx f = do
 
     -- issue MULTI
@@ -183,7 +181,7 @@ execTx f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx :: Serialize a => Redis.Connection -> Tx (Deferred a) -> IO (Either [(Int, TypeError)] (Either Reply a))
+runTx :: Serialize a => Redis.Connection -> Tx (Deferred a) -> IO (Either [(Int, TypeError)] (Either String a))
 runTx conn f = runRedis conn $ do
     let state = execState f defaultTxState
 
