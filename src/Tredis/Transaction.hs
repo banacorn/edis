@@ -16,7 +16,8 @@ import           Data.Map (Map)
 import qualified Database.Redis as Redis
 import           Database.Redis (Redis, runRedis, Reply(..), sendRequest, Status(..))
 
-type Tx = State TxState
+type Tx' = State TxState
+type Tx a = Tx' (Deferred a)
 type Key = ByteString
 
 data TypeError
@@ -65,7 +66,7 @@ defaultTxState :: TxState
 defaultTxState = TxState [] Map.empty [] 0
 
 -- commands
-insertCommand :: [ByteString] -> Tx Int
+insertCommand :: [ByteString] -> Tx' Int
 insertCommand cmd = do
     state <- get
     let cmds = commands state
@@ -76,26 +77,26 @@ insertCommand cmd = do
     return count
 
 -- type
-removeType :: Key -> Tx ()
+removeType :: Key -> Tx' ()
 removeType key = do
     state <- get
     let table = typeTable state
     put $ state { typeTable = Map.delete key table }
 
-lookupType :: Key -> Tx (Maybe TypeRep)
+lookupType :: Key -> Tx' (Maybe TypeRep)
 lookupType key = do
     state <- get
     let table = typeTable state
     return $ Map.lookup key table
 
-insertType :: Key -> TypeRep -> Tx ()
+insertType :: Key -> TypeRep -> Tx' ()
 insertType key typeRep = do
     state <- get
     let table = typeTable state
     put $ state { typeTable = Map.insert key typeRep table }
 
 -- type error
-assertError :: TypeError -> Tx ()
+assertError :: TypeError -> Tx' ()
 assertError err = do
     state <- get
     let errors = typeError state
@@ -109,10 +110,10 @@ assertError err = do
 --  send command
 --------------------------------------------------------------------------------
 
-sendCommand :: (Se a, Typeable a) => [ByteString] -> Tx (Deferred a)
+sendCommand :: (Se a, Typeable a) => [ByteString] -> Tx a
 sendCommand = sendCommand' decode
 
-sendCommand' :: (Se a, Typeable a) => (Reply -> Either Reply a) -> [ByteString] -> Tx (Deferred a)
+sendCommand' :: (Se a, Typeable a) => (Reply -> Either Reply a) -> [ByteString] -> Tx a
 sendCommand' decoder cmd = do
     count <- insertCommand cmd
     return $ Deferred (decoder . select count)
@@ -148,7 +149,7 @@ decodeAsInt others = Left others
 --  type checking stuffs
 --------------------------------------------------------------------------------
 
-declareType :: Key -> TypeRep -> Tx ()
+declareType :: Key -> TypeRep -> Tx' ()
 declareType key typeRep = do
     typeError <- checkType key typeRep
     case typeError of
@@ -156,13 +157,13 @@ declareType key typeRep = do
         Just (Undeclared _)       -> insertType key typeRep -- not asserted yet
         Just (TypeMismatch k x y) -> assertError $ TypeMismatch k x y
 
-declareTypeOfVal :: Typeable a => Key -> a -> Tx ()
+declareTypeOfVal :: Typeable a => Key -> a -> Tx' ()
 declareTypeOfVal key val = declareType key (typeOf val)
 
-(=::) :: Typeable a => Key -> a -> Tx ()
+(=::) :: Typeable a => Key -> a -> Tx' ()
 (=::) = declareTypeOfVal
 
-checkType :: Key -> TypeRep -> Tx (Maybe TypeError)
+checkType :: Key -> TypeRep -> Tx' (Maybe TypeError)
 checkType key got = do
     result <- lookupType key
     case result of
@@ -179,12 +180,12 @@ buildListType :: TypeRep -> TypeRep
 buildListType arg = mkTyConApp (typeRepTyCon $ typeOf [()]) [arg]
 
 --------------------------------------------------------------------------------
---  Tx
+--  Tx'
 --------------------------------------------------------------------------------
 
 -- execute
-execTx :: Se a => Tx (Deferred a) -> Redis (Either Reply a)
-execTx f = do
+execTx' :: Se a => Tx' (Deferred a) -> Redis (Either Reply a)
+execTx' f = do
 
     -- issue MULTI
     multi
@@ -210,14 +211,14 @@ execTx f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx :: (Serialize a, Se a) => Redis.Connection -> Tx (Deferred a) -> IO (Either [(Int, TypeError)] (Either Reply a))
-runTx conn f = runRedis conn $ do
+runTx' :: (Serialize a, Se a) => Redis.Connection -> Tx a -> IO (Either [(Int, TypeError)] (Either Reply a))
+runTx' conn f = runRedis conn $ do
     let state = execState f defaultTxState
 
     -- see if there's any type error
     let errors = typeError state
     if null errors
-        then Right <$> execTx f         -- if none, then execute
+        then Right <$> execTx' f         -- if none, then execute
         else Left  <$> return (reverse errors)    -- else return the errors
 
 -- re-export Redis shit

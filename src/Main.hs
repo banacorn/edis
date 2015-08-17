@@ -11,20 +11,20 @@ import Control.Applicative
 main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
-    result <- runTx conn $ do
+    result <- runTx' conn $ do
 
 
         -- del "a"
-        -- declare "a" :: Tx [Int]
+        -- declare "a" :: Tx' [Int]
         -- lpush "a" (3 :: Int)
-        -- lpop "a" :: Tx (Deferred (Maybe Int))
-        -- lrange "a" 0 (-2) :: Tx (Deferred [Int])
+        -- lpop "a" :: Tx' (Deferred (Maybe Int))
+        -- lrange "a" 0 (-2) :: Tx' (Deferred [Int])
         -- llen "a"
-        -- lindex "a" 2 :: Tx (Deferred (Maybe Int))
+        -- lindex "a" 2 :: Tx' (Deferred (Maybe Int))
 
         -- set "a" (42 :: Int)
         -- incr "a"
-        -- get "a" :: Tx (Deferred (Maybe Int))
+        -- get "a" :: Tx' (Deferred (Maybe Int))
 
         sadd "set" (4 :: Int)
         sadd "set" (1 :: Int)

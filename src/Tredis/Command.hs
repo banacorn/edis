@@ -15,19 +15,19 @@ import           Database.Redis (sendRequest, Status(..))
 --  String
 --------------------------------------------------------------------------------
 
-declare :: (Se a, Typeable a) => Key -> Tx a
+declare :: (Se a, Typeable a) => Key -> Tx' a
 declare key = do
     let Right val = de "witchcraft" -- fake a value
     key =:: val                         -- see if their type matches
     return val
 
-set :: (Se a, Typeable a) => Key -> a -> Tx (Deferred ())
+set :: (Se a, Typeable a) => Key -> a -> Tx ()
 set key val = do
     key =:: val
     -- sendCommand' decodeAsStatus ["SET", key, en val]
     sendCommand ["SET", key, en val]
 
-incr :: Key -> Tx (Deferred ())
+incr :: Key -> Tx ()
 incr key = do
     typeError <- checkType key (typeRep (Proxy :: Proxy Int))
     case typeError of
@@ -36,7 +36,7 @@ incr key = do
             return $ error (show err)
         Nothing -> sendCommand ["INCR", key]
 
-decr :: Key -> Tx (Deferred ())
+decr :: Key -> Tx ()
 decr key = do
     typeError <- checkType key (typeRep (Proxy :: Proxy Int))
     case typeError of
@@ -45,7 +45,7 @@ decr key = do
             return $ error (show err)
         Nothing -> sendCommand ["DECR", key]
 
-get :: (Se a, Typeable a) => Key -> Tx (Deferred (Maybe a))
+get :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 get key = do
     val <- sendCommand' decodeAsMaybe ["GET", key]
     let deferredType = deferredValueType val
@@ -56,7 +56,7 @@ get key = do
             return $ error (show er)
         Nothing -> return val
 
-del :: Key -> Tx (Deferred ())
+del :: Key -> Tx ()
 del key = do
     removeType key
     sendCommand ["DEL", key]
@@ -65,12 +65,12 @@ del key = do
 --  List
 --------------------------------------------------------------------------------
 
-lpush :: (Se a, Typeable a) => Key -> a -> Tx (Deferred ())
+lpush :: (Se a, Typeable a) => Key -> a -> Tx ()
 lpush key val = do
     key =:: [val]
     sendCommand ["LPUSH", key, en val]
 
-lpop :: (Se a, Typeable a) => Key -> Tx (Deferred (Maybe a))
+lpop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 lpop key = do
     val <- sendCommand' decodeAsMaybe ["LPOP", key]
     let deferredType = deferredValueType val
@@ -82,11 +82,11 @@ lpop key = do
             return $ error (show er)
         Nothing -> return val
 
-llen :: Key -> Tx (Deferred Int)
+llen :: Key -> Tx Int
 llen key = do
     sendCommand' decodeAsInt ["LLEN", key]
 
-lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx (Deferred [a])
+lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx [a]
 lrange key m n = do
     val <- sendCommand' decodeAsList ["LRANGE", key, en m, en n]
     let deferredType = deferredValueType val
@@ -97,7 +97,7 @@ lrange key m n = do
             return $ error (show er)
         Nothing -> return val
 
-lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Deferred (Maybe a))
+lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Maybe a)
 lindex key n = do
     val <- sendCommand' decodeAsMaybe ["LINDEX", key, en n]
     let deferredType = deferredValueType val
@@ -113,11 +113,11 @@ lindex key n = do
 --  Set
 --------------------------------------------------------------------------------
 
-sadd :: (Se a, Typeable a) => Key -> a -> Tx (Deferred ())
+sadd :: (Se a, Typeable a) => Key -> a -> Tx ()
 sadd key val = do
     -- key =:: Set val
     sendCommand ["SADD", key, en val]
 
-scard :: Key -> Tx (Deferred Int)
+scard :: Key -> Tx Int
 scard key  = do
     sendCommand' decodeAsInt ["SCARD", key]
