@@ -3,6 +3,7 @@
 module Tredis.Command where
 
 import Tredis.Transaction
+import Tredis.Serialize
 import Data.Typeable
 import qualified Data.ByteString as B
 import           Data.ByteString (ByteString)

@@ -1,14 +1,14 @@
-{-# LANGUAGE OverloadedStrings, GADTs, DeriveDataTypeable, TypeOperators, DeriveGeneric, DefaultSignatures #-}
+{-# LANGUAGE OverloadedStrings, DeriveDataTypeable #-}
 
 module Tredis.Transaction where
+
+import Tredis.Serialize
 
 import           Data.Typeable
 import           Control.Applicative
 import           Control.Monad.State
-import qualified Data.ByteString as B
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (pack, unpack)
-import qualified Data.Serialize as S
 import           Data.Serialize (Serialize)
 import qualified Data.Map as Map
 import           Data.Map (Map)
@@ -45,19 +45,6 @@ instance Monad Deferred where
                                 x' <- x rs
                                 let Deferred f' = f x'
                                 f' rs
-
-class Serialize a => Se a where
-    en :: a -> ByteString
-    en = S.encode
-    de :: ByteString -> Either String a
-    de = S.decode
-
-instance Se Int where
-    en = pack . show
-    de = Right . read . unpack
-
-instance Se ()
-instance Se Integer
 
 --------------------------------------------------------------------------------
 --  TxState manipulation
