@@ -73,17 +73,22 @@ insertCommand cmd = do
                 }
     return count
 
-sendCommand :: Serialize a => [ByteString] -> Tx (Deferred a)
+sendCommand :: (Serialize a, Typeable a) => [ByteString] -> Tx (Deferred a)
 sendCommand = sendCommand' decodeReply
 
-sendCommand' :: Serialize a => (Reply -> Either String a) -> [ByteString] -> Tx (Deferred a)
+sendCommand' :: (Serialize a, Typeable a) => (Reply -> Either String a) -> [ByteString] -> Tx (Deferred a)
 sendCommand' decoder cmd = do
     count <- insertCommand cmd
     return $ Deferred (decoder . select count)
     where   select = flip (!!)
 
-decodeReply :: Serialize a => Reply -> Either String a
-decodeReply (Bulk (Just raw)) = S.decode raw
+decodeReply :: (Serialize a, Typeable a) => Reply -> Either String a
+decodeReply (Bulk (Just raw)) =
+    case S.decode raw of
+        Left  err -> Left err
+        Right val -> if typeOf val == typeRep (Proxy :: Proxy Int)
+                        then Right val
+                        else Right val
 decodeReply others = Left (show others)
 
 
