@@ -120,6 +120,14 @@ decode (Bulk (Just raw)) = case de raw of
     Right v -> Right v
 decode others = Left others
 
+decodeAsMaybe :: (Se a, Typeable a) => Reply -> Either Reply (Maybe a)
+decodeAsMaybe (Bulk (Just raw)) = case de raw of
+    Left er -> Left (Error $ pack er)
+    Right v -> Right (Just v)
+decodeAsMaybe (Bulk Nothing) = Right Nothing
+decodeAsMaybe others = Left others
+
+
 decodeAsList :: (Se a, Typeable a) => Reply -> Either Reply [a]
 decodeAsList (MultiBulk (Just raw)) = mapM decode raw
 decodeAsList others = Left others

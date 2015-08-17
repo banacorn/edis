@@ -44,11 +44,11 @@ decr key = do
             return $ error (show err)
         Nothing -> sendCommand ["DECR", key]
 
-get :: (Se a, Typeable a) => Key -> Tx (Deferred a)
+get :: (Se a, Typeable a) => Key -> Tx (Deferred (Maybe a))
 get key = do
-    val <- sendCommand ["GET", key]
+    val <- sendCommand' decodeAsMaybe ["GET", key]
     let deferredType = deferredValueType val
-    typeError <- checkType key deferredType
+    typeError <- checkType key (head $ typeRepArgs deferredType)
     case typeError of
         Just er -> do
             assertError er
@@ -69,11 +69,11 @@ lpush key val = do
     key =:: [val]
     sendCommand ["LPUSH", key, en val]
 
-lpop :: (Se a, Typeable a) => Key -> Tx (Deferred a)
+lpop :: (Se a, Typeable a) => Key -> Tx (Deferred (Maybe a))
 lpop key = do
-    val <- sendCommand ["LPOP", key]
+    val <- sendCommand' decodeAsMaybe ["LPOP", key]
     let deferredType = deferredValueType val
-    let listType = buildListType deferredType
+    let listType = buildListType (head $ typeRepArgs deferredType)
     typeError <- checkType key listType
     case typeError of
         Just er -> do
