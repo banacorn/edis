@@ -48,6 +48,9 @@ instance Monad Deferred where
                                 let Deferred f' = f x'
                                 f' rs
 
+data List n = List n
+    deriving (Generic, Typeable, Show, Eq)
+
 data Set n = Set n
     deriving (Generic, Typeable, Show, Eq)
 
@@ -176,8 +179,14 @@ checkType key got = do
 deferredValueType :: Typeable a => Deferred a -> TypeRep
 deferredValueType q = head (typeRepArgs (typeOf q))
 
-buildListType :: TypeRep -> TypeRep
-buildListType arg = mkTyConApp (typeRepTyCon $ typeOf [()]) [arg]
+list :: TypeRep -> TypeRep
+list = mkAppTy (typeRep (Proxy :: Proxy List))
+
+carrier :: TypeRep -> TypeRep
+carrier = head . typeRepArgs
+
+deferred :: Typeable a => Deferred a -> TypeRep
+deferred = carrier . typeOf
 
 --------------------------------------------------------------------------------
 --  Tx'

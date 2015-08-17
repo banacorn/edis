@@ -15,16 +15,15 @@ import           Database.Redis (sendRequest, Status(..))
 --  String
 --------------------------------------------------------------------------------
 
-declare :: (Se a, Typeable a) => Key -> Tx' a
+declare :: (Se a, Typeable a) => Key -> Tx a
 declare key = do
     let Right val = de "witchcraft" -- fake a value
-    key =:: val                         -- see if their type matches
-    return val
+    key =:: val                     -- see if their type matches
+    return $ Deferred $ \_ -> Right val
 
 set :: (Se a, Typeable a) => Key -> a -> Tx ()
 set key val = do
     key =:: val
-    -- sendCommand' decodeAsStatus ["SET", key, en val]
     sendCommand ["SET", key, en val]
 
 incr :: Key -> Tx ()
@@ -48,8 +47,7 @@ decr key = do
 get :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 get key = do
     val <- sendCommand' decodeAsMaybe ["GET", key]
-    let deferredType = deferredValueType val
-    typeError <- checkType key (head $ typeRepArgs deferredType)
+    typeError <- checkType key (carrier $ deferred val)
     case typeError of
         Just er -> do
             assertError er
@@ -67,15 +65,13 @@ del key = do
 
 lpush :: (Se a, Typeable a) => Key -> a -> Tx ()
 lpush key val = do
-    key =:: [val]
+    key =:: List val
     sendCommand ["LPUSH", key, en val]
 
 lpop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 lpop key = do
     val <- sendCommand' decodeAsMaybe ["LPOP", key]
-    let deferredType = deferredValueType val
-    let listType = buildListType (head $ typeRepArgs deferredType)
-    typeError <- checkType key listType
+    typeError <- checkType key (list $ carrier $ deferred val)
     case typeError of
         Just er -> do
             assertError er
@@ -89,8 +85,7 @@ llen key = do
 lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx [a]
 lrange key m n = do
     val <- sendCommand' decodeAsList ["LRANGE", key, en m, en n]
-    let deferredType = deferredValueType val
-    typeError <- checkType key deferredType
+    typeError <- checkType key (deferred val)
     case typeError of
         Just er -> do
             assertError er
@@ -100,9 +95,7 @@ lrange key m n = do
 lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Maybe a)
 lindex key n = do
     val <- sendCommand' decodeAsMaybe ["LINDEX", key, en n]
-    let deferredType = deferredValueType val
-    let listType = buildListType (head $ typeRepArgs deferredType)
-    typeError <- checkType key listType
+    typeError <- checkType key (list $ carrier $ deferred val)
     case typeError of
         Just er -> do
             assertError er
