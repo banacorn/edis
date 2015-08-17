@@ -19,6 +19,10 @@ instance Se Int where
     en = pack . show
     de = Right . read . unpack
 
+instance Se Integer where
+    en = pack . show
+    de = Right . read . unpack
+
 instance Se Bool
 instance Se Char
 instance Se Double
@@ -27,7 +31,6 @@ instance Se Int8
 instance Se Int16
 instance Se Int32
 instance Se Int64
-instance Se Integer
 instance Se Ordering
 instance Se Word
 instance Se Word8

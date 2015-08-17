@@ -13,14 +13,13 @@ main = do
     conn <- connect defaultConnectInfo
     result <- runTx conn $ do
 
-        declare "a" :: Tx Int
+        declare "a" :: Tx [Int]
 
-        -- get "a" :: Tx (Deferred [Int])
-        incr "a"
         del "a"
-        -- decr "a"
+        lpush "a" (4 :: Int)
+        lpush "a" (3 :: Int)
+        lrange "a" 0 (-2) :: Tx (Deferred [Int])
 
-        -- get "a" ::  Tx (Deferred Int)
 
         -- set "a" (42 :: Int)
         -- incr "a"

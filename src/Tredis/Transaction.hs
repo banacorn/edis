@@ -120,6 +120,10 @@ decode (Bulk (Just raw)) = case de raw of
     Right v -> Right v
 decode others = Left others
 
+decodeAsList :: (Se a, Typeable a) => Reply -> Either Reply [a]
+decodeAsList (MultiBulk (Just raw)) = mapM decode raw
+decodeAsList others = Left others
+
 decodeAsInt :: Reply -> Either Reply Int
 decodeAsInt (Integer n) = Right (fromInteger n)
 decodeAsInt others = Left others

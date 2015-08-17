@@ -80,3 +80,14 @@ lpop key = do
             assertError er
             return $ error (show er)
         Nothing -> return val
+
+lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx (Deferred [a])
+lrange key m n = do
+    val <- sendCommand' decodeAsList ["lrange", key, en m, en n]
+    let deferredType = deferredValueType val
+    typeError <- checkType key deferredType
+    case typeError of
+        Just er -> do
+            assertError er
+            return $ error (show er)
+        Nothing -> return val
