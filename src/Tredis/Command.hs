@@ -23,16 +23,16 @@ declare key = do
 set :: (Serialize a, Typeable a, Show a) => Key -> a -> Tx (Deferred ())
 set key val = do
     key =:: val
-    insertCmd ["SET", key, encode val]
+    sendCommand ["SET", key, encode val]
 
 incr :: Key -> Tx (Deferred ())
 incr key = do
     -- key =:: val
-    insertCmd ["INCR", key]
+    sendCommand ["INCR", key]
 
 get :: (Serialize a, Typeable a) => Key -> Tx (Deferred a)
 get key = do
-    val <- insertCmd ["GET", key]
+    val <- sendCommand ["GET", key]
     let deferredType = deferredValueType val
     typeError <- checkType key deferredType
     case typeError of
@@ -44,7 +44,7 @@ get key = do
 del :: Key -> Tx (Deferred ())
 del key = do
     removeType key
-    insertCmd ["DEL", key]
+    sendCommand ["DEL", key]
 
 --------------------------------------------------------------------------------
 --  List
@@ -53,11 +53,11 @@ del key = do
 lpush :: (Serialize a, Typeable a, Show a) => Key -> a -> Tx (Deferred ())
 lpush key val = do
     key =:: [val]
-    insertCmd ["LPUSH", key, encode val]
+    sendCommand ["LPUSH", key, encode val]
 
 lpop :: (Serialize a, Typeable a) => Key -> Tx (Deferred a)
 lpop key = do
-    val <- insertCmd ["LPOP", key]
+    val <- sendCommand ["LPOP", key]
     let deferredType = deferredValueType val
     let listType = buildListType deferredType
     typeError <- checkType key listType

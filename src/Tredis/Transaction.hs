@@ -63,25 +63,33 @@ defaultTxState :: TxState
 defaultTxState = TxState [] Map.empty [] 0
 
 -- commands
-insertCmd :: Serialize a => [ByteString] -> Tx (Deferred a)
-insertCmd args = do
+insertCommand :: [ByteString] -> Tx Int
+insertCommand cmd = do
     state <- get
     let cmds = commands state
     let count = counter state
-    put $ state { commands = sendRequest args : cmds
+    put $ state { commands = sendRequest cmd : cmds
                 , counter  = succ count
                 }
-    return $ Deferred $ \replies -> decodeReply (replies !! count)
+    return count
 
-insertCmd' :: Serialize a => [ByteString] -> ([Reply] -> Either Reply a) -> Tx (Deferred a)
-insertCmd' args decoder = do
-    state <- get
-    let cmds = commands state
-    let count = counter state
-    put $ state { commands = sendRequest args : cmds
-                , counter  = succ count
-                }
-    return $ Deferred decoder
+sendCommand :: Serialize a => [ByteString] -> Tx (Deferred a)
+sendCommand = sendCommand' decodeReply
+
+sendCommand' :: Serialize a => (Reply -> Either Reply a) -> [ByteString] -> Tx (Deferred a)
+sendCommand' decoder cmd = do
+    count <- insertCommand cmd
+    return $ Deferred (decoder . select count)
+    where   select = flip (!!)
+
+decodeReply :: Serialize a => Reply -> Either Reply a
+decodeReply (Bulk (Just raw)) = case S.decode raw of
+    Left decodeErr -> Left $ Error (pack decodeErr)
+    Right result   -> Right result
+decodeReply others = Left others
+
+
+
 
 -- type
 removeType :: Key -> Tx ()
@@ -146,12 +154,6 @@ buildListType arg = mkTyConApp (typeRepTyCon $ typeOf [()]) [arg]
 --------------------------------------------------------------------------------
 --  Tx
 --------------------------------------------------------------------------------
-
-decodeReply :: Serialize a => Reply -> Either Reply a
-decodeReply (Bulk (Just raw)) = case S.decode raw of
-    Left decodeErr -> Left $ Error (pack decodeErr)
-    Right result   -> Right result
-decodeReply others = Left others
 
 -- execute
 execTx :: Serialize a => Tx (Deferred a) -> Redis (Either Reply a)
