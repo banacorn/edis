@@ -12,14 +12,14 @@ main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
     result <- runTx conn $ do
+    
+        set "foo" True
+        set "bar" 'c'
 
-        del "a"
-        declare "a"     :: Tx [Bool]
-        -- set "a" False                        -- type error!
-        -- get "a"         :: Tx (Deferred Bool) -- type error!
-        lpush "a" True
-        lpush "a" False
-        lpop "a" :: Tx (Deferred Int)
+        foo <- get "foo" :: Tx (Deferred Bool)
+        bar <- get "bar" :: Tx (Deferred Char)
+
+        return $ (,) <$> foo <*> bar
 
     case result of
         Left err -> print err
