@@ -20,7 +20,7 @@ declare key = do
     key =:: val                         -- see if their type matches
     return val
 
-set :: (Se a, Typeable a, Show a) => Key -> a -> Tx (Deferred ())
+set :: (Se a, Typeable a) => Key -> a -> Tx (Deferred ())
 set key val = do
     key =:: val
     sendCommand ["SET", key, en val]
@@ -33,6 +33,15 @@ incr key = do
             assertError err
             return $ error (show err)
         Nothing -> sendCommand ["INCR", key]
+
+decr :: Key -> Tx (Deferred ())
+decr key = do
+    typeError <- checkType key (typeRep (Proxy :: Proxy Int))
+    case typeError of
+        Just err -> do
+            assertError err
+            return $ error (show err)
+        Nothing -> sendCommand ["DECR", key]
 
 get :: (Se a, Typeable a) => Key -> Tx (Deferred a)
 get key = do
@@ -54,7 +63,7 @@ del key = do
 --  List
 --------------------------------------------------------------------------------
 
-lpush :: (Se a, Typeable a, Show a) => Key -> a -> Tx (Deferred ())
+lpush :: (Se a, Typeable a) => Key -> a -> Tx (Deferred ())
 lpush key val = do
     key =:: [val]
     sendCommand ["LPUSH", key, en val]
@@ -70,3 +79,5 @@ lpop key = do
             assertError er
             return $ error (show er)
         Nothing -> return val
+
+-- llen ::
