@@ -9,7 +9,7 @@ import qualified Data.ByteString as B
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (pack, unpack)
 import           Data.Serialize (Serialize)
-import           Database.Redis (sendRequest)
+import           Database.Redis (sendRequest, Status(..))
 
 --------------------------------------------------------------------------------
 --  String
@@ -24,6 +24,7 @@ declare key = do
 set :: (Se a, Typeable a) => Key -> a -> Tx (Deferred ())
 set key val = do
     key =:: val
+    -- sendCommand' decodeAsStatus ["SET", key, en val]
     sendCommand ["SET", key, en val]
 
 incr :: Key -> Tx (Deferred ())
@@ -85,14 +86,23 @@ llen :: Key -> Tx (Deferred Int)
 llen key = do
     sendCommand' decodeAsInt ["LLEN", key]
 
-
-
-
 lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx (Deferred [a])
 lrange key m n = do
     val <- sendCommand' decodeAsList ["LRANGE", key, en m, en n]
     let deferredType = deferredValueType val
     typeError <- checkType key deferredType
+    case typeError of
+        Just er -> do
+            assertError er
+            return $ error (show er)
+        Nothing -> return val
+
+lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Deferred (Maybe a))
+lindex key n = do
+    val <- sendCommand' decodeAsMaybe ["LINDEX", key, en n]
+    let deferredType = deferredValueType val
+    let listType = buildListType (head $ typeRepArgs deferredType)
+    typeError <- checkType key listType
     case typeError of
         Just er -> do
             assertError er

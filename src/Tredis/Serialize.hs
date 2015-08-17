@@ -1,13 +1,21 @@
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, DefaultSignatures, DeriveDataTypeable #-}
+
 module Tredis.Serialize where
 
+import qualified Database.Redis as Redis
+import           Database.Redis (Status(..))
+
+import GHC.Generics
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as L
 import Data.ByteString.Char8 (pack, unpack)
-import Data.Serialize (Serialize, encode, decode)
+import Data.Serialize --(Serialize, encode, decode)
+-- import Data.Serialize (Serialize, encode, decode)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Data.Monoid (All, Any, Dual, Sum, Product, First, Last)
 import Data.Ratio (Ratio)
+
 
 class Serialize a => Se a where
     en :: a -> ByteString
@@ -22,6 +30,17 @@ instance Se Int where
 instance Se Integer where
     en = pack . show
     de = Right . read . unpack
+
+
+-- instance Generic Status where
+    -- type Rep Status =
+-- instance Serialize Status
+-- instance Se Status where
+--     en = pack . show
+    -- de = Right . read . unpack
+
+-- instance Se Status where
+--     en Ok = "OK"
 
 instance Se Bool
 instance Se Char

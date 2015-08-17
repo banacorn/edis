@@ -13,7 +13,7 @@ import           Data.Serialize (Serialize)
 import qualified Data.Map as Map
 import           Data.Map (Map)
 import qualified Database.Redis as Redis
-import           Database.Redis (Redis, runRedis, Reply(..), sendRequest, Status)
+import           Database.Redis (Redis, runRedis, Reply(..), sendRequest, Status(..))
 
 type Tx = State TxState
 type Key = ByteString
@@ -135,6 +135,10 @@ decodeAsList others = Left others
 decodeAsInt :: Reply -> Either Reply Int
 decodeAsInt (Integer n) = Right (fromInteger n)
 decodeAsInt others = Left others
+--
+-- decodeAsStatus :: Reply -> Either Reply Status
+-- decodeAsStatus (SingleLine "OK") = Right Ok
+-- decodeAsStatus others = Left others
 
 --------------------------------------------------------------------------------
 --  type checking stuffs
@@ -190,7 +194,7 @@ execTx f = do
 
     -- issue EXEC
     execResult <- exec
-    -- liftIO $ print execResult
+    liftIO $ print execResult
     case execResult of
         MultiBulk (Just replies) -> do
             return (deferred replies)

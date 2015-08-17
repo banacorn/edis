@@ -16,10 +16,11 @@ main = do
 
         -- del "a"
         declare "a" :: Tx [Int]
-        lpush "a" (3 :: Int)
+        -- lpush "a" (3 :: Int)
         -- lpop "a" :: Tx (Deferred (Maybe Int))
-        lrange "a" 0 (-2) :: Tx (Deferred [Int])
-        llen "a"
+        -- lrange "a" 0 (-2) :: Tx (Deferred [Int])
+        -- llen "a"
+        lindex "a" 2 :: Tx (Deferred (Maybe Int))
 
         -- set "a" (42 :: Int)
         -- incr "a"
