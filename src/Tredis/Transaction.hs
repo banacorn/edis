@@ -46,15 +46,17 @@ instance Monad Deferred where
                                 let Deferred f' = f x'
                                 f' rs
 
-class Se a where
-    en :: Serialize a => a -> ByteString
+class Serialize a => Se a where
+    en :: a -> ByteString
     en = S.encode
-    de :: Serialize a => ByteString -> Either String a
+    de :: ByteString -> Either String a
     de = S.decode
 
 instance Se Int where
     en = pack . show
     de = Right . read . unpack
+
+instance Se ()
 
 --------------------------------------------------------------------------------
 --  TxState
@@ -81,18 +83,18 @@ insertCommand cmd = do
                 }
     return count
 
-sendCommand :: (Serialize a, Typeable a) => [ByteString] -> Tx (Deferred a)
+sendCommand :: (Se a, Typeable a) => [ByteString] -> Tx (Deferred a)
 sendCommand = sendCommand' decodeReply
 
-sendCommand' :: (Serialize a, Typeable a) => (Reply -> Either String a) -> [ByteString] -> Tx (Deferred a)
+sendCommand' :: (Se a, Typeable a) => (Reply -> Either String a) -> [ByteString] -> Tx (Deferred a)
 sendCommand' decoder cmd = do
     count <- insertCommand cmd
     return $ Deferred (decoder . select count)
     where   select = flip (!!)
 
-decodeReply :: (Serialize a, Typeable a) => Reply -> Either String a
+decodeReply :: (Se a, Typeable a) => Reply -> Either String a
 decodeReply (Bulk (Just raw)) =
-    case S.decode raw of
+    case de raw of
         Left  err -> Left err
         Right val -> if typeOf val == typeRep (Proxy :: Proxy Int)
                         then Right val
@@ -167,7 +169,7 @@ buildListType arg = mkTyConApp (typeRepTyCon $ typeOf [()]) [arg]
 --------------------------------------------------------------------------------
 
 -- execute
-execTx :: Serialize a => Tx (Deferred a) -> Redis (Either String a)
+execTx :: Se a => Tx (Deferred a) -> Redis (Either String a)
 execTx f = do
 
     -- issue MULTI
@@ -194,7 +196,7 @@ execTx f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx :: Serialize a => Redis.Connection -> Tx (Deferred a) -> IO (Either [(Int, TypeError)] (Either String a))
+runTx :: Se a => Redis.Connection -> Tx (Deferred a) -> IO (Either [(Int, TypeError)] (Either String a))
 runTx conn f = runRedis conn $ do
     let state = execState f defaultTxState
 
@@ -207,8 +209,3 @@ runTx conn f = runRedis conn $ do
 -- re-export Redis shit
 connect = Redis.connect
 defaultConnectInfo = Redis.defaultConnectInfo
-
-
-encode :: (Serialize a, Typeable a, Show a) => a -> ByteString
-encode val | typeOf val == typeRep (Proxy :: Proxy Int) = pack $ show val
-       | otherwise = S.encode val

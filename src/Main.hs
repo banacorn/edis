@@ -15,7 +15,7 @@ main = do
 
         declare "a" :: Tx Int
 
-        set "a" (42 :: Int)
+        -- set "a" (42 :: Int)
         incr "a"
         get "a" :: Tx (Deferred Int)
 

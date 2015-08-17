@@ -91,12 +91,12 @@ runTredis conn f = runRedis conn $ do
 --  commands
 --------------------------------------------------------------------------------
 
-set :: (Serialize a, Typeable a) => ByteString -> a -> Tredis (TredisReply Status)
+set :: (Se a, Serialize a, Typeable a) => ByteString -> a -> Tredis (TredisReply Status)
 set key val = do
     assertType key (typeOf val)
     liftCommand $ R.set key (encodeValue val)
 
-get :: (Serialize a, Typeable a) => ByteString -> Tredis (TredisReply (Maybe a))
+get :: (Se a, Serialize a, Typeable a) => ByteString -> Tredis (TredisReply (Maybe a))
 get key = liftDecode $ R.get key
 
 incr :: ByteString -> Tredis (TredisReply Integer)
