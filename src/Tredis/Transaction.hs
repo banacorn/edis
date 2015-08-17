@@ -46,7 +46,15 @@ instance Monad Deferred where
                                 let Deferred f' = f x'
                                 f' rs
 
--- instance Typeable Deferred
+class Se a where
+    en :: Serialize a => a -> ByteString
+    en = S.encode
+    de :: Serialize a => ByteString -> Either String a
+    de = S.decode
+
+instance Se Int where
+    en = pack . show
+    de = Right . read . unpack
 
 --------------------------------------------------------------------------------
 --  TxState
