@@ -81,9 +81,16 @@ lpop key = do
             return $ error (show er)
         Nothing -> return val
 
+llen :: Key -> Tx (Deferred Int)
+llen key = do
+    sendCommand' decodeAsInt ["LLEN", key]
+
+
+
+
 lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx (Deferred [a])
 lrange key m n = do
-    val <- sendCommand' decodeAsList ["lrange", key, en m, en n]
+    val <- sendCommand' decodeAsList ["LRANGE", key, en m, en n]
     let deferredType = deferredValueType val
     typeError <- checkType key deferredType
     case typeError of
