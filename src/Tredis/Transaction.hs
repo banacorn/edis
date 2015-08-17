@@ -26,7 +26,7 @@ instance Show TypeError where
     show (Undeclared key) = "Undeclared: " ++ unpack key
     show (TypeMismatch key exp got) = "TypeMismatch: expect '" ++ show exp ++ "', got '" ++ show got ++ "'"
 
-data Deferred a = Deferred ([Reply] -> Either String a)
+data Deferred a = Deferred ([Reply] -> Either Reply a)
     deriving Typeable
 
 instance Functor Deferred where
@@ -105,16 +105,24 @@ assertError err = do
 --  send command
 --------------------------------------------------------------------------------
 
-
 sendCommand :: (Se a, Typeable a) => [ByteString] -> Tx (Deferred a)
-sendCommand cmd = do
-    count <- insertCommand cmd
-    return $ Deferred (decodeReply . select count)
-    where   select = flip (!!)
-            decodeReply :: (Se a, Typeable a) => Reply -> Either String a
-            decodeReply (Bulk (Just raw)) = de raw
-            decodeReply others = Left (show others)
+sendCommand = sendCommand' decode
 
+sendCommand' :: (Se a, Typeable a) => (Reply -> Either Reply a) -> [ByteString] -> Tx (Deferred a)
+sendCommand' decoder cmd = do
+    count <- insertCommand cmd
+    return $ Deferred (decoder . select count)
+    where   select = flip (!!)
+
+decode :: (Se a, Typeable a) => Reply -> Either Reply a
+decode (Bulk (Just raw)) = case de raw of
+    Left er -> Left (Error $ pack er)
+    Right v -> Right v
+decode others = Left others
+
+decodeAsInt :: Reply -> Either Reply Int
+decodeAsInt (Integer n) = Right (fromInteger n)
+decodeAsInt others = Left others
 
 --------------------------------------------------------------------------------
 --  type checking stuffs
@@ -155,7 +163,7 @@ buildListType arg = mkTyConApp (typeRepTyCon $ typeOf [()]) [arg]
 --------------------------------------------------------------------------------
 
 -- execute
-execTx :: Se a => Tx (Deferred a) -> Redis (Either String a)
+execTx :: Se a => Tx (Deferred a) -> Redis (Either Reply a)
 execTx f = do
 
     -- issue MULTI
@@ -182,7 +190,7 @@ execTx f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx :: (Serialize a, Se a) => Redis.Connection -> Tx (Deferred a) -> IO (Either [(Int, TypeError)] (Either String a))
+runTx :: (Serialize a, Se a) => Redis.Connection -> Tx (Deferred a) -> IO (Either [(Int, TypeError)] (Either Reply a))
 runTx conn f = runRedis conn $ do
     let state = execState f defaultTxState
 
