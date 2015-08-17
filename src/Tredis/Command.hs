@@ -108,3 +108,16 @@ lindex key n = do
             assertError er
             return $ error (show er)
         Nothing -> return val
+
+--------------------------------------------------------------------------------
+--  Set
+--------------------------------------------------------------------------------
+
+sadd :: (Se a, Typeable a) => Key -> a -> Tx (Deferred ())
+sadd key val = do
+    -- key =:: Set val
+    sendCommand ["SADD", key, en val]
+
+scard :: Key -> Tx (Deferred Int)
+scard key  = do
+    sendCommand' decodeAsInt ["SCARD", key]

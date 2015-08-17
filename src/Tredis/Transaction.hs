@@ -1,10 +1,11 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveDataTypeable #-}
 
 module Tredis.Transaction where
 
 import Tredis.Serialize
 
 import           Data.Typeable
+import           GHC.Generics
 import           Control.Applicative
 import           Control.Monad.State
 import           Data.ByteString (ByteString)
@@ -45,6 +46,9 @@ instance Monad Deferred where
                                 x' <- x rs
                                 let Deferred f' = f x'
                                 f' rs
+
+data Set n = Set n
+    deriving (Generic, Typeable, Show, Eq)
 
 --------------------------------------------------------------------------------
 --  TxState manipulation
