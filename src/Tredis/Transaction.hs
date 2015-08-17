@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, GADTs, DeriveDataTypeable, TypeOperators #-}
+{-# LANGUAGE OverloadedStrings, GADTs, DeriveDataTypeable, TypeOperators, DeriveGeneric, DefaultSignatures #-}
 
 module Tredis.Transaction where
 
@@ -57,9 +57,10 @@ instance Se Int where
     de = Right . read . unpack
 
 instance Se ()
+instance Se Integer
 
 --------------------------------------------------------------------------------
---  TxState
+--  TxState manipulation
 --------------------------------------------------------------------------------
 
 data TxState = TxState
@@ -82,27 +83,6 @@ insertCommand cmd = do
                 , counter  = succ count
                 }
     return count
-
-sendCommand :: (Se a, Typeable a) => [ByteString] -> Tx (Deferred a)
-sendCommand = sendCommand' decodeReply
-
-sendCommand' :: (Se a, Typeable a) => (Reply -> Either String a) -> [ByteString] -> Tx (Deferred a)
-sendCommand' decoder cmd = do
-    count <- insertCommand cmd
-    return $ Deferred (decoder . select count)
-    where   select = flip (!!)
-
-decodeReply :: (Se a, Typeable a) => Reply -> Either String a
-decodeReply (Bulk (Just raw)) =
-    case de raw of
-        Left  err -> Left err
-        Right val -> if typeOf val == typeRep (Proxy :: Proxy Int)
-                        then Right val
-                        else Right val
-decodeReply others = Left (show others)
-
-
-
 
 -- type
 removeType :: Key -> Tx ()
@@ -131,7 +111,32 @@ assertError err = do
     let count = counter state
     put $ state { typeError = (count, err) : errors }
 
--- type stuffs
+
+
+
+--------------------------------------------------------------------------------
+--  send command
+--------------------------------------------------------------------------------
+
+
+
+
+sendCommand :: (Se a, Typeable a) => [ByteString] -> Tx (Deferred a)
+sendCommand cmd = do
+    count <- insertCommand cmd
+    return $ Deferred (decodeReply . select count)
+    where   select = flip (!!)
+            decodeReply :: (Se a, Typeable a) => Reply -> Either String a
+            decodeReply (Bulk (Just raw)) = de raw
+            decodeReply others = Left (show others)
+
+
+
+
+--------------------------------------------------------------------------------
+--  type checking stuffs
+--------------------------------------------------------------------------------
+
 declareType :: Key -> TypeRep -> Tx ()
 declareType key typeRep = do
     typeError <- checkType key typeRep
@@ -155,8 +160,6 @@ checkType key got = do
         Just expected -> if expected == got
             then return $ Nothing
             else return $ Just (TypeMismatch key expected got)
-
--- checkType
 
 deferredValueType :: Typeable a => Deferred a -> TypeRep
 deferredValueType q = head (typeRepArgs (typeOf q))
@@ -184,7 +187,7 @@ execTx f = do
 
     -- issue EXEC
     execResult <- exec
-    liftIO $ print execResult
+    -- liftIO $ print execResult
     case execResult of
         MultiBulk (Just replies) -> do
             return (deferred replies)
@@ -196,7 +199,7 @@ execTx f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx :: Se a => Redis.Connection -> Tx (Deferred a) -> IO (Either [(Int, TypeError)] (Either String a))
+runTx :: (Serialize a, Se a) => Redis.Connection -> Tx (Deferred a) -> IO (Either [(Int, TypeError)] (Either String a))
 runTx conn f = runRedis conn $ do
     let state = execState f defaultTxState
 

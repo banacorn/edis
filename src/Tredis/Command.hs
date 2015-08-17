@@ -27,8 +27,12 @@ set key val = do
 
 incr :: Key -> Tx (Deferred ())
 incr key = do
-    -- key =:: val
-    sendCommand ["INCR", key]
+    typeError <- checkType key (typeRep (Proxy :: Proxy Int))
+    case typeError of
+        Just err -> do
+            assertError err
+            return $ error (show err)
+        Nothing -> sendCommand ["INCR", key]
 
 get :: (Se a, Typeable a) => Key -> Tx (Deferred a)
 get key = do

@@ -15,9 +15,11 @@ main = do
 
         declare "a" :: Tx Int
 
+        get "a" ::  Tx (Deferred Int)
+
         -- set "a" (42 :: Int)
-        incr "a"
-        get "a" :: Tx (Deferred Int)
+        -- incr "a"
+        -- get "a" :: Tx (Deferred Int)
 
         -- set "foo" True
         -- set "bar" 'c'
