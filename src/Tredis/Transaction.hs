@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, GADTs, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings, GADTs, DeriveDataTypeable, TypeOperators #-}
 
 module Tredis.Transaction where
 
@@ -8,7 +8,8 @@ import           Control.Monad.State
 import qualified Data.ByteString as B
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (pack, unpack)
-import           Data.Serialize (Serialize, encode, decode)
+import qualified Data.Serialize as S
+import           Data.Serialize (Serialize)
 import qualified Data.Map as Map
 import           Data.Map (Map)
 import qualified Database.Redis as Redis
@@ -71,6 +72,16 @@ insertCmd args = do
                 , counter  = succ count
                 }
     return $ Deferred $ \replies -> decodeReply (replies !! count)
+
+insertCmd' :: Serialize a => [ByteString] -> ([Reply] -> Either Reply a) -> Tx (Deferred a)
+insertCmd' args decoder = do
+    state <- get
+    let cmds = commands state
+    let count = counter state
+    put $ state { commands = sendRequest args : cmds
+                , counter  = succ count
+                }
+    return $ Deferred decoder
 
 -- type
 removeType :: Key -> Tx ()
@@ -137,7 +148,7 @@ buildListType arg = mkTyConApp (typeRepTyCon $ typeOf [()]) [arg]
 --------------------------------------------------------------------------------
 
 decodeReply :: Serialize a => Reply -> Either Reply a
-decodeReply (Bulk (Just raw)) = case decode raw of
+decodeReply (Bulk (Just raw)) = case S.decode raw of
     Left decodeErr -> Left $ Error (pack decodeErr)
     Right result   -> Right result
 decodeReply others = Left others
@@ -183,3 +194,8 @@ runTx conn f = runRedis conn $ do
 -- re-export Redis shit
 connect = Redis.connect
 defaultConnectInfo = Redis.defaultConnectInfo
+
+
+encode :: (Serialize a, Typeable a, Show a) => a -> ByteString
+encode val | typeOf val == typeRep (Proxy :: Proxy Int) = pack $ show val
+       | otherwise = S.encode val

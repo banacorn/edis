@@ -7,7 +7,7 @@ import Data.Typeable
 import qualified Data.ByteString as B
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (pack, unpack)
-import           Data.Serialize (Serialize, encode, decode)
+import           Data.Serialize (Serialize, decode)
 import           Database.Redis (sendRequest)
 
 --------------------------------------------------------------------------------
@@ -20,10 +20,15 @@ declare key = do
     key =:: val                         -- see if their type matches
     return val
 
-set :: (Serialize a, Typeable a) => Key -> a -> Tx (Deferred ())
+set :: (Serialize a, Typeable a, Show a) => Key -> a -> Tx (Deferred ())
 set key val = do
     key =:: val
     insertCmd ["SET", key, encode val]
+
+incr :: Key -> Tx (Deferred ())
+incr key = do
+    -- key =:: val
+    insertCmd ["INCR", key]
 
 get :: (Serialize a, Typeable a) => Key -> Tx (Deferred a)
 get key = do
@@ -45,7 +50,7 @@ del key = do
 --  List
 --------------------------------------------------------------------------------
 
-lpush :: (Serialize a, Typeable a) => Key -> a -> Tx (Deferred ())
+lpush :: (Serialize a, Typeable a, Show a) => Key -> a -> Tx (Deferred ())
 lpush key val = do
     key =:: [val]
     insertCmd ["LPUSH", key, encode val]
