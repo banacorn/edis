@@ -79,5 +79,3 @@ lpop key = do
             assertError er
             return $ error (show er)
         Nothing -> return val
-
--- llen ::

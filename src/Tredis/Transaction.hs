@@ -119,8 +119,6 @@ assertError err = do
 --------------------------------------------------------------------------------
 
 
-
-
 sendCommand :: (Se a, Typeable a) => [ByteString] -> Tx (Deferred a)
 sendCommand cmd = do
     count <- insertCommand cmd
@@ -129,8 +127,6 @@ sendCommand cmd = do
             decodeReply :: (Se a, Typeable a) => Reply -> Either String a
             decodeReply (Bulk (Just raw)) = de raw
             decodeReply others = Left (show others)
-
-
 
 
 --------------------------------------------------------------------------------
