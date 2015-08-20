@@ -12,6 +12,13 @@ import           Data.Serialize (Serialize)
 import           Database.Redis (sendRequest, Status(..))
 
 --------------------------------------------------------------------------------
+--  Connection
+--------------------------------------------------------------------------------
+
+ping :: Tx Status
+ping = sendCommand decodeAsStatus ["PING"]
+
+--------------------------------------------------------------------------------
 --  String
 --------------------------------------------------------------------------------
 
@@ -24,29 +31,29 @@ declare key = do
 set :: (Se a, Typeable a) => Key -> a -> Tx Status
 set key val = do
     key =:: val
-    sendCommand' decodeAsStatus ["SET", key, en val]
+    sendCommand decodeAsStatus ["SET", key, en val]
 
-incr :: Key -> Tx ()
+incr :: Key -> Tx Int
 incr key = do
     typeError <- checkType key (typeRep (Proxy :: Proxy Int))
     case typeError of
         Just err -> do
             assertError err
             return $ error (show err)
-        Nothing -> sendCommand ["INCR", key]
+        Nothing -> sendCommand decodeAsInt ["INCR", key]
 
-decr :: Key -> Tx ()
+decr :: Key -> Tx Int
 decr key = do
     typeError <- checkType key (typeRep (Proxy :: Proxy Int))
     case typeError of
         Just err -> do
             assertError err
             return $ error (show err)
-        Nothing -> sendCommand ["DECR", key]
+        Nothing -> sendCommand decodeAsInt ["DECR", key]
 
 get :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 get key = do
-    val <- sendCommand' decodeAsMaybe ["GET", key]
+    val <- sendCommand decodeAsMaybe ["GET", key]
     typeError <- checkType key (carrier $ deferred val)
     case typeError of
         Just er -> do
@@ -57,7 +64,7 @@ get key = do
 del :: Key -> Tx Status
 del key = do
     removeType key
-    sendCommand' decodeAsStatus ["DEL", key]
+    sendCommand decodeAsStatus ["DEL", key]
 
 --------------------------------------------------------------------------------
 --  List
@@ -66,11 +73,11 @@ del key = do
 lpush :: (Se a, Typeable a) => Key -> a -> Tx Status
 lpush key val = do
     key =:: List val
-    sendCommand' decodeAsStatus ["LPUSH", key, en val]
+    sendCommand decodeAsStatus ["LPUSH", key, en val]
 
 lpop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 lpop key = do
-    val <- sendCommand' decodeAsMaybe ["LPOP", key]
+    val <- sendCommand decodeAsMaybe ["LPOP", key]
     typeError <- checkType key (list $ carrier $ deferred val)
     case typeError of
         Just er -> do
@@ -80,11 +87,11 @@ lpop key = do
 
 llen :: Key -> Tx Int
 llen key = do
-    sendCommand' decodeAsInt ["LLEN", key]
+    sendCommand decodeAsInt ["LLEN", key]
 
 lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx [a]
 lrange key m n = do
-    val <- sendCommand' decodeAsList ["LRANGE", key, en m, en n]
+    val <- sendCommand decodeAsList ["LRANGE", key, en m, en n]
     typeError <- checkType key (deferred val)
     case typeError of
         Just er -> do
@@ -94,7 +101,7 @@ lrange key m n = do
 
 lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Maybe a)
 lindex key n = do
-    val <- sendCommand' decodeAsMaybe ["LINDEX", key, en n]
+    val <- sendCommand decodeAsMaybe ["LINDEX", key, en n]
     typeError <- checkType key (list $ carrier $ deferred val)
     case typeError of
         Just er -> do
@@ -108,9 +115,10 @@ lindex key n = do
 
 sadd :: (Se a, Typeable a) => Key -> a -> Tx Status
 sadd key val = do
-    -- key =:: Set val
-    sendCommand' decodeAsStatus ["SADD", key, en val]
+    key =:: Set val
+    sendCommand decodeAsStatus ["SADD", key, en val]
 
 scard :: Key -> Tx Int
-scard key  = do
-    sendCommand' decodeAsInt ["SCARD", key]
+scard key = do
+    -- checkType key (list $ carrier $ deferred val)
+    sendCommand decodeAsInt ["SCARD", key]

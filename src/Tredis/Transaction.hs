@@ -111,11 +111,11 @@ assertError err = do
 --  send command
 --------------------------------------------------------------------------------
 
-sendCommand :: (Se a, Typeable a) => [ByteString] -> Tx a
-sendCommand = sendCommand' decode
+sendCommand' :: (Se a, Typeable a) => [ByteString] -> Tx a
+sendCommand' = sendCommand decode
 
-sendCommand' :: (Se a) => (Reply -> Either Reply a) -> [ByteString] -> Tx a
-sendCommand' decoder cmd = do
+sendCommand :: (Se a) => (Reply -> Either Reply a) -> [ByteString] -> Tx a
+sendCommand decoder cmd = do
     count <- insertCommand cmd
     return $ Deferred (decoder . select count)
     where   select = flip (!!)
@@ -124,29 +124,28 @@ decode :: (Se a, Typeable a) => Reply -> Either Reply a
 decode (Bulk (Just raw)) = case de raw of
     Left er -> Left (Error $ pack er)
     Right v -> Right v
-decode others = Left others
+decode others = error $ show others
 
 decodeAsMaybe :: (Se a, Typeable a) => Reply -> Either Reply (Maybe a)
 decodeAsMaybe (Bulk (Just raw)) = case de raw of
     Left er -> Left (Error $ pack er)
     Right v -> Right (Just v)
 decodeAsMaybe (Bulk Nothing) = Right Nothing
-decodeAsMaybe others = Left others
+decodeAsMaybe others = error $ show others
 
 decodeAsList :: (Se a, Typeable a) => Reply -> Either Reply [a]
 decodeAsList (MultiBulk (Just raw)) = mapM decode raw
-decodeAsList others = Left others
+decodeAsList others = error $ show others
 
 decodeAsInt :: Reply -> Either Reply Int
 decodeAsInt (Integer n) = Right (fromInteger n)
-decodeAsInt others = Left others
+decodeAsInt others = error $ show others
 
 decodeAsStatus :: Reply -> Either Reply Status
--- decodeAsStatus (SingleLine s) = case de s of
---     Left  err -> Left (Error $ pack err)
---     Right val -> Right val
 decodeAsStatus (SingleLine "OK") = Right Ok
-decodeAsStatus others = Left others
+decodeAsStatus (SingleLine "PONG") = Right Pong
+decodeAsStatus (SingleLine s) = Right (Status s)
+decodeAsStatus others = error $ show others
 
 --------------------------------------------------------------------------------
 --  type checking stuffs
