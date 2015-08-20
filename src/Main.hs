@@ -11,8 +11,7 @@ import Control.Applicative
 main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
-    result <- runTx' conn $ do
-
+    result <- runTx conn $ do
 
         -- del "a"
         -- declare "a" :: Tx' [Int]

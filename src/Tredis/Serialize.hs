@@ -32,16 +32,6 @@ instance Se Integer where
     de = Right . read . unpack
 
 
--- instance Generic Status where
-    -- type Rep Status =
--- instance Serialize Status
--- instance Se Status where
---     en = pack . show
-    -- de = Right . read . unpack
-
--- instance Se Status where
---     en Ok = "OK"
-
 instance Se Bool
 instance Se Char
 instance Se Double

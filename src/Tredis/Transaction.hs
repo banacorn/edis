@@ -107,8 +107,6 @@ assertError err = do
     put $ state { typeError = (count, err) : errors }
 
 
-
-
 --------------------------------------------------------------------------------
 --  send command
 --------------------------------------------------------------------------------
@@ -135,7 +133,6 @@ decodeAsMaybe (Bulk (Just raw)) = case de raw of
 decodeAsMaybe (Bulk Nothing) = Right Nothing
 decodeAsMaybe others = Left others
 
-
 decodeAsList :: (Se a, Typeable a) => Reply -> Either Reply [a]
 decodeAsList (MultiBulk (Just raw)) = mapM decode raw
 decodeAsList others = Left others
@@ -143,10 +140,6 @@ decodeAsList others = Left others
 decodeAsInt :: Reply -> Either Reply Int
 decodeAsInt (Integer n) = Right (fromInteger n)
 decodeAsInt others = Left others
---
--- decodeAsStatus :: Reply -> Either Reply Status
--- decodeAsStatus (SingleLine "OK") = Right Ok
--- decodeAsStatus others = Left others
 
 --------------------------------------------------------------------------------
 --  type checking stuffs
@@ -176,8 +169,6 @@ checkType key got = do
             then return $ Nothing
             else return $ Just (TypeMismatch key expected got)
 
-deferredValueType :: Typeable a => Deferred a -> TypeRep
-deferredValueType q = head (typeRepArgs (typeOf q))
 
 list :: TypeRep -> TypeRep
 list = mkAppTy (typeRep (Proxy :: Proxy List))
@@ -193,22 +184,22 @@ deferred = carrier . typeOf
 --------------------------------------------------------------------------------
 
 -- execute
-execTx' :: Se a => Tx' (Deferred a) -> Redis (Either Reply a)
-execTx' f = do
+execTx :: Se a => Tx a -> Redis (Either Reply a)
+execTx f = do
 
     -- issue MULTI
     multi
 
     -- extract states
     let (Deferred deferred, state) = runState f defaultTxState
-    let (redisCommands) = reverse $ commands state
+    let redisCommands = reverse $ commands state
 
     -- run them all
     sequence redisCommands
 
     -- issue EXEC
     execResult <- exec
-    liftIO $ print execResult
+    -- liftIO $ print execResult
     case execResult of
         MultiBulk (Just replies) -> do
             return (deferred replies)
@@ -220,14 +211,19 @@ execTx' f = do
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-runTx' :: (Serialize a, Se a) => Redis.Connection -> Tx a -> IO (Either [(Int, TypeError)] (Either Reply a))
-runTx' conn f = runRedis conn $ do
+checkTx :: Se a => Tx a -> [(Int, TypeError)]
+checkTx f =
+    let state = execState f defaultTxState in
+    reverse $ typeError state
+
+runTx :: (Serialize a, Se a) => Redis.Connection -> Tx a -> IO (Either [(Int, TypeError)] (Either Reply a))
+runTx conn f = runRedis conn $ do
     let state = execState f defaultTxState
 
     -- see if there's any type error
     let errors = typeError state
     if null errors
-        then Right <$> execTx' f         -- if none, then execute
+        then Right <$> execTx f         -- if none, then execute
         else Left  <$> return (reverse errors)    -- else return the errors
 
 -- re-export Redis shit
