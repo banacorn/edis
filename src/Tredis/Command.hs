@@ -4,6 +4,7 @@ module Tredis.Command where
 
 import Tredis.Transaction
 import Tredis.Serialize
+import Tredis.TypeChecking
 import Data.Typeable
 import qualified Data.ByteString as B
 import           Data.ByteString (ByteString)
@@ -25,13 +26,17 @@ ping = sendCommand decodeAsStatus ["PING"]
 declare :: (Se a, Typeable a) => Key -> Tx a
 declare key = do
     let Right val = de "witchcraft" -- fake a value
-    key =:: val                     -- see if their type matches
+    insertType key (typeOf val)
     return $ Deferred $ \_ -> Right val
 
 set :: (Se a, Typeable a) => Key -> a -> Tx Status
 set key val = do
-    key =:: val
-    sendCommand decodeAsStatus ["SET", key, en val]
+    typeError <- checkType key (typeOf val)
+    case typeError of
+        Just err -> do
+            assertError err
+            error (show err)
+        Nothing -> sendCommand decodeAsStatus ["SET", key, en val]
 
 incr :: Key -> Tx Int
 incr key = do
@@ -39,7 +44,7 @@ incr key = do
     case typeError of
         Just err -> do
             assertError err
-            return $ error (show err)
+            error (show err)
         Nothing -> sendCommand decodeAsInt ["INCR", key]
 
 decr :: Key -> Tx Int
@@ -48,7 +53,7 @@ decr key = do
     case typeError of
         Just err -> do
             assertError err
-            return $ error (show err)
+            error (show err)
         Nothing -> sendCommand decodeAsInt ["DECR", key]
 
 get :: (Se a, Typeable a) => Key -> Tx (Maybe a)
@@ -72,8 +77,13 @@ del key = do
 
 lpush :: (Se a, Typeable a) => Key -> a -> Tx Status
 lpush key val = do
-    key =:: List val
-    sendCommand decodeAsStatus ["LPUSH", key, en val]
+    typeError <- checkType key (typeOf $ List val)
+    case typeError of
+        Just err -> do
+            assertError err
+            error (show err)
+        Nothing -> sendCommand decodeAsStatus ["LPUSH", key, en val]
+
 
 lpop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 lpop key = do
@@ -115,9 +125,14 @@ lindex key n = do
 
 sadd :: (Se a, Typeable a) => Key -> a -> Tx Status
 sadd key val = do
-    key =:: Set val
-    sendCommand decodeAsStatus ["SADD", key, en val]
+    typeError <- checkType key (typeOf $ Set val)
+    case typeError of
+        Just err -> do
+            assertError err
+            error (show err)
+        Nothing -> sendCommand decodeAsStatus ["SADD", key, en val]
 
+-- scard :: Set a -> Int
 scard :: Key -> Tx Int
 scard key = do
     -- checkType key (list $ carrier $ deferred val)

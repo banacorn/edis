@@ -48,12 +48,6 @@ instance Monad Deferred where
                                 let Deferred f' = f x'
                                 f' rs
 
-data List n = List n
-    deriving (Generic, Typeable, Show, Eq)
-
-data Set n = Set n
-    deriving (Generic, Typeable, Show, Eq)
-
 --------------------------------------------------------------------------------
 --  TxState manipulation
 --------------------------------------------------------------------------------
@@ -146,44 +140,6 @@ decodeAsStatus (SingleLine "OK") = Right Ok
 decodeAsStatus (SingleLine "PONG") = Right Pong
 decodeAsStatus (SingleLine s) = Right (Status s)
 decodeAsStatus others = error $ show others
-
---------------------------------------------------------------------------------
---  type checking stuffs
---------------------------------------------------------------------------------
-
-declareType :: Key -> TypeRep -> Tx' ()
-declareType key typeRep = do
-    typeError <- checkType key typeRep
-    case typeError of
-        Nothing                   -> insertType key typeRep -- already asserted
-        Just (Undeclared _)       -> insertType key typeRep -- not asserted yet
-        Just (TypeMismatch k x y) -> assertError $ TypeMismatch k x y
-
-declareTypeOfVal :: Typeable a => Key -> a -> Tx' ()
-declareTypeOfVal key val = declareType key (typeOf val)
-
-(=::) :: Typeable a => Key -> a -> Tx' ()
-(=::) = declareTypeOfVal
-
-checkType :: Key -> TypeRep -> Tx' (Maybe TypeError)
-checkType key got = do
-    result <- lookupType key
-    case result of
-        Nothing -> do
-            return $ Just (Undeclared key)
-        Just expected -> if expected == got
-            then return $ Nothing
-            else return $ Just (TypeMismatch key expected got)
-
-
-list :: TypeRep -> TypeRep
-list = mkAppTy (typeRep (Proxy :: Proxy List))
-
-carrier :: TypeRep -> TypeRep
-carrier = head . typeRepArgs
-
-deferred :: Typeable a => Deferred a -> TypeRep
-deferred = carrier . typeOf
 
 --------------------------------------------------------------------------------
 --  Tx'
