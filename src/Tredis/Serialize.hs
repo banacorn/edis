@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, DefaultSignatures, DeriveDataTypeable #-}
+-- {-# LANGUAGE OverloadedStrings, DeriveGeneric, DefaultSignatures, DeriveDataTypeable #-}
+{-# LANGUAGE TypeFamilies, TypeOperators, DeriveDataTypeable #-}
 
 module Tredis.Serialize where
 
@@ -9,6 +10,7 @@ import GHC.Generics
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as L
 import Data.ByteString.Char8 (pack, unpack)
+import Data.Typeable
 import Data.Serialize --(Serialize, encode, decode)
 -- import Data.Serialize (Serialize, encode, decode)
 import Data.Int (Int8, Int16, Int32, Int64)
@@ -30,6 +32,43 @@ instance Se Int where
 instance Se Integer where
     en = pack . show
     de = Right . read . unpack
+
+
+data D1Status
+data C1StatusOk
+data C1StatusPong
+data C1StatusStatus
+
+
+-- derive Status an instance of Generic manually, for Serialize's sake
+instance Datatype D1Status where
+    datatypeName _ = "Status"
+    moduleName _   = "Database.Redis"
+instance Constructor C1StatusOk where
+    conName _ = "Ok"
+instance Constructor C1StatusPong where
+    conName _ = "Pong"
+instance Constructor C1StatusStatus where
+    conName _ = "Status"
+
+instance Generic Status where
+    -- Representation type
+    type Rep Status = D1 D1Status (
+            C1 C1StatusOk U1
+        :+: C1 C1StatusPong U1
+        :+: C1 C1StatusStatus (S1 NoSelector (K1 R ByteString)))
+    -- Conversion functions
+    from Ok = M1 (L1 (M1 U1))
+    from Pong = M1 (R1 (L1 (M1 U1)))
+    from (Status s) = M1 (R1 (R1 (M1 (M1 (K1 s)))))
+
+    to (M1 (L1 (M1 U1))) = Ok
+    to (M1 (R1 (L1 (M1 U1)))) = Pong
+    to (M1 (R1 (R1 (M1 (M1 (K1 s)))))) = Status s
+
+ -- hooray
+instance Serialize Status
+instance Se Status
 
 
 instance Se Bool

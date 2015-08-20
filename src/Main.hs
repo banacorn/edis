@@ -21,17 +21,17 @@ main = do
         -- llen "a"
         -- lindex "a" 2 :: Tx' (Deferred (Maybe Int))
 
-        -- set "a" (42 :: Int)
+        set "a" (42 :: Int)
         -- incr "a"
         -- get "a" :: Tx' (Deferred (Maybe Int))
 
-        sadd "set" (4 :: Int)
-        sadd "set" (1 :: Int)
-        sadd "set" (2 :: Int)
-        sadd "set" (10 :: Int)
-        sadd "set" (2 :: Int)
         -- sadd "set" (4 :: Int)
-        scard "set"
+        -- sadd "set" (1 :: Int)
+        -- sadd "set" (2 :: Int)
+        -- sadd "set" (10 :: Int)
+        -- sadd "set" (2 :: Int)
+        -- -- sadd "set" (4 :: Int)
+        -- scard "set"
 
 
     case result of

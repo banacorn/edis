@@ -21,10 +21,10 @@ declare key = do
     key =:: val                     -- see if their type matches
     return $ Deferred $ \_ -> Right val
 
-set :: (Se a, Typeable a) => Key -> a -> Tx ()
+set :: (Se a, Typeable a) => Key -> a -> Tx Status
 set key val = do
     key =:: val
-    sendCommand ["SET", key, en val]
+    sendCommand' decodeAsStatus ["SET", key, en val]
 
 incr :: Key -> Tx ()
 incr key = do
@@ -54,19 +54,19 @@ get key = do
             return $ error (show er)
         Nothing -> return val
 
-del :: Key -> Tx ()
+del :: Key -> Tx Status
 del key = do
     removeType key
-    sendCommand ["DEL", key]
+    sendCommand' decodeAsStatus ["DEL", key]
 
 --------------------------------------------------------------------------------
 --  List
 --------------------------------------------------------------------------------
 
-lpush :: (Se a, Typeable a) => Key -> a -> Tx ()
+lpush :: (Se a, Typeable a) => Key -> a -> Tx Status
 lpush key val = do
     key =:: List val
-    sendCommand ["LPUSH", key, en val]
+    sendCommand' decodeAsStatus ["LPUSH", key, en val]
 
 lpop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 lpop key = do
@@ -106,10 +106,10 @@ lindex key n = do
 --  Set
 --------------------------------------------------------------------------------
 
-sadd :: (Se a, Typeable a) => Key -> a -> Tx ()
+sadd :: (Se a, Typeable a) => Key -> a -> Tx Status
 sadd key val = do
     -- key =:: Set val
-    sendCommand ["SADD", key, en val]
+    sendCommand' decodeAsStatus ["SADD", key, en val]
 
 scard :: Key -> Tx Int
 scard key  = do

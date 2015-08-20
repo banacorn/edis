@@ -114,7 +114,7 @@ assertError err = do
 sendCommand :: (Se a, Typeable a) => [ByteString] -> Tx a
 sendCommand = sendCommand' decode
 
-sendCommand' :: (Se a, Typeable a) => (Reply -> Either Reply a) -> [ByteString] -> Tx a
+sendCommand' :: (Se a) => (Reply -> Either Reply a) -> [ByteString] -> Tx a
 sendCommand' decoder cmd = do
     count <- insertCommand cmd
     return $ Deferred (decoder . select count)
@@ -140,6 +140,13 @@ decodeAsList others = Left others
 decodeAsInt :: Reply -> Either Reply Int
 decodeAsInt (Integer n) = Right (fromInteger n)
 decodeAsInt others = Left others
+
+decodeAsStatus :: Reply -> Either Reply Status
+-- decodeAsStatus (SingleLine s) = case de s of
+--     Left  err -> Left (Error $ pack err)
+--     Right val -> Right val
+decodeAsStatus (SingleLine "OK") = Right Ok
+decodeAsStatus others = Left others
 
 --------------------------------------------------------------------------------
 --  type checking stuffs
@@ -199,7 +206,7 @@ execTx f = do
 
     -- issue EXEC
     execResult <- exec
-    -- liftIO $ print execResult
+    liftIO $ print execResult
     case execResult of
         MultiBulk (Just replies) -> do
             return (deferred replies)
