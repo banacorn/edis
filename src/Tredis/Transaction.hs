@@ -93,12 +93,13 @@ insertType key typeRep = do
     put $ state { typeTable = Map.insert key typeRep table }
 
 -- type error
-assertError :: TypeError -> Tx' ()
+assertError :: TypeError -> Tx' a
 assertError err = do
     state <- get
     let errors = typeError state
     let count = counter state
     put $ state { typeError = (count, err) : errors }
+    return undefined
 
 
 --------------------------------------------------------------------------------
@@ -208,3 +209,6 @@ instance (Serialize n) => Serialize (List n)
 
 data Set n = Set n
     deriving (Generic, Typeable, Show, Eq)
+
+instance (Se n) => Se (Set n)
+instance (Serialize n) => Serialize (Set n)

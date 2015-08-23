@@ -29,10 +29,10 @@ main = do
         -- incr "a"
         -- get "a" :: Tx' (Deferred (Maybe Int))
 
-        declare "set" :: Tx (Int)
+        declare "set" :: Tx (Set Int)
         sadd "set" (4 :: Int)
         sadd "set" (1 :: Int)
-        sadd "set" (2 :: Int)
+        sadd "set" (2:: Double)
         -- scard "set"
         -- smembers "set"
 

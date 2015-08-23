@@ -35,7 +35,6 @@ set key val = do
     case typeError of
         Just err -> do
             assertError err
-            error (show err)
         Nothing -> returnStatus ["SET", key, en val]
 
 incr :: Key -> Tx Int
@@ -44,7 +43,6 @@ incr key = do
     case typeError of
         Just err -> do
             assertError err
-            error (show err)
         Nothing -> returnInt ["INCR", key]
 
 decr :: Key -> Tx Int
@@ -53,7 +51,6 @@ decr key = do
     case typeError of
         Just err -> do
             assertError err
-            error (show err)
         Nothing -> returnInt ["DECR", key]
 
 get :: (Se a, Typeable a) => Key -> Tx (Maybe a)
@@ -63,7 +60,6 @@ get key = do
     case typeError of
         Just er -> do
             assertError er
-            return $ error (show er)
         Nothing -> return val
 
 del :: Key -> Tx Status
@@ -81,7 +77,6 @@ lpush key val = do
     case typeError of
         Just err -> do
             assertError err
-            error (show err)
         Nothing -> returnStatus ["LPUSH", key, en val]
 
 
@@ -90,9 +85,7 @@ lpop key = do
     val <- returnMaybe ["LPOP", key]
     typeError <- checkType key (list $ carrier $ deferred val)
     case typeError of
-        Just er -> do
-            assertError er
-            return $ error (show er)
+        Just er -> assertError er
         Nothing -> return val
 
 llen :: Key -> Tx Int
@@ -106,7 +99,6 @@ lrange key m n = do
     case typeError of
         Just er -> do
             assertError er
-            return $ error (show er)
         Nothing -> return val
 
 lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Maybe a)
@@ -116,7 +108,6 @@ lindex key n = do
     case typeError of
         Just er -> do
             assertError er
-            return $ error (show er)
         Nothing -> return val
 
 --------------------------------------------------------------------------------
@@ -129,7 +120,6 @@ sadd key val = do
     case typeError of
         Just err -> do
             assertError err
-            error (show err)
         Nothing -> returnStatus ["SADD", key, en val]
 --
 -- -- scard :: Set a -> Int
