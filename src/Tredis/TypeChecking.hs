@@ -26,6 +26,31 @@ checkType key got = do
             then return $ Nothing
             else return $ Just (TypeMismatch key expected got)
 
+    --
+    -- ret <- returnStatus ["SET", key, en val]
+    -- typeError <- checkType key (typeOf val)
+    -- case typeError of
+    --     Just err -> do
+    --         assertError err
+    --     Nothing -> return ret
+
+    --
+    -- val <- returnMaybe ["GET", key]
+    -- typeError <- checkType key (carrier $ deferred val)
+    -- case typeError of
+    --     Just er -> do
+    --         assertError er
+    --     Nothing -> return val
+
+checkType' :: Key -> Tx' a -> (a -> TypeRep) -> Tx' a
+checkType' key cmd f = do
+    returnValue <- cmd
+    typeError <- checkType key (f returnValue)
+    case typeError of
+        Just er -> assertError er
+        Nothing -> return returnValue
+
+
 
 list :: TypeRep -> TypeRep
 list = mkAppTy (typeRep (Proxy :: Proxy List))

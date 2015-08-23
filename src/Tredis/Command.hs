@@ -30,37 +30,16 @@ declare key = do
     return $ Deferred $ \_ -> Right val
 
 set :: (Se a, Typeable a) => Key -> a -> Tx Status
-set key val = do
-    typeError <- checkType key (typeOf val)
-    case typeError of
-        Just err -> do
-            assertError err
-        Nothing -> returnStatus ["SET", key, en val]
+set key val = checkType' key (returnStatus ["SET", key, en val]) (const $ typeOf val)
 
 incr :: Key -> Tx Int
-incr key = do
-    typeError <- checkType key (typeRep (Proxy :: Proxy Int))
-    case typeError of
-        Just err -> do
-            assertError err
-        Nothing -> returnInt ["INCR", key]
+incr key = checkType' key (returnInt ["INCR", key]) (const $ typeRep (Proxy :: Proxy Int))
 
 decr :: Key -> Tx Int
-decr key = do
-    typeError <- checkType key (typeRep (Proxy :: Proxy Int))
-    case typeError of
-        Just err -> do
-            assertError err
-        Nothing -> returnInt ["DECR", key]
+decr key = checkType' key (returnInt ["DECR", key]) (const $ typeRep (Proxy :: Proxy Int))
 
 get :: (Se a, Typeable a) => Key -> Tx (Maybe a)
-get key = do
-    val <- returnMaybe ["GET", key]
-    typeError <- checkType key (carrier $ deferred val)
-    case typeError of
-        Just er -> do
-            assertError er
-        Nothing -> return val
+get key = checkType' key (returnMaybe ["GET", key]) (carrier . deferred)
 
 del :: Key -> Tx Status
 del key = do
@@ -72,55 +51,32 @@ del key = do
 --------------------------------------------------------------------------------
 
 lpush :: (Se a, Typeable a) => Key -> a -> Tx Status
-lpush key val = do
-    typeError <- checkType key (typeOf $ List val)
-    case typeError of
-        Just err -> do
-            assertError err
-        Nothing -> returnStatus ["LPUSH", key, en val]
-
+lpush key val = checkType' key (returnStatus ["LPUSH", key, en val]) (const $ typeOf $ List val)
 
 lpop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
-lpop key = do
-    val <- returnMaybe ["LPOP", key]
-    typeError <- checkType key (list $ carrier $ deferred val)
-    case typeError of
-        Just er -> assertError er
-        Nothing -> return val
+lpop key = checkType' key (returnMaybe ["LPOP", key]) (list . carrier . deferred)
 
-llen :: Key -> Tx Int
-llen key = do
-    returnInt ["LLEN", key]
+-- llen :: Key -> Tx Int
+-- llen key = do
+--     returnInt ["LLEN", key]
 
 lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx [a]
-lrange key m n = do
-    val <- returnList ["LRANGE", key, en m, en n]
-    typeError <- checkType key (deferred val)
-    case typeError of
-        Just er -> do
-            assertError er
-        Nothing -> return val
+lrange key m n = checkType' key (returnList ["LRANGE", key, en m, en n]) (list . carrier . deferred)
 
 lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Maybe a)
-lindex key n = do
-    val <- returnMaybe ["LINDEX", key, en n]
-    typeError <- checkType key (list $ carrier $ deferred val)
-    case typeError of
-        Just er -> do
-            assertError er
-        Nothing -> return val
+lindex key n = checkType' key (returnMaybe ["LINDEX", key, en n]) (list . carrier . deferred)
 
 --------------------------------------------------------------------------------
 --  Set
 --------------------------------------------------------------------------------
 
-sadd :: (Se a, Typeable a) => Key -> a -> Tx Status
-sadd key val = do
-    typeError <- checkType key (typeOf $ Set val)
-    case typeError of
-        Just err -> do
-            assertError err
-        Nothing -> returnStatus ["SADD", key, en val]
+-- sadd :: (Se a, Typeable a) => Key -> a -> Tx Status
+-- sadd key val = do
+--     typeError <- checkType key (typeOf $ Set val)
+--     case typeError of
+--         Just err -> do
+--             assertError err
+--         Nothing -> returnStatus ["SADD", key, en val]
 --
 -- -- scard :: Set a -> Int
 -- scard :: Key -> Tx Int
