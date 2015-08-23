@@ -105,8 +105,6 @@ assertError err = do
 --  send command
 --------------------------------------------------------------------------------
 
-sendCommand' :: (Se a, Typeable a) => [ByteString] -> Tx a
-sendCommand' = sendCommand decode
 
 sendCommand :: (Se a) => (Reply -> Either Reply a) -> [ByteString] -> Tx a
 sendCommand decoder cmd = do
@@ -141,6 +139,16 @@ decodeAsStatus (SingleLine "PONG") = Right Pong
 decodeAsStatus (SingleLine s) = Right (Status s)
 decodeAsStatus others = error $ show others
 
+returnAnything :: (Se a, Typeable a) => [ByteString] -> Tx a
+returnAnything = sendCommand decode
+returnMaybe :: (Se a, Typeable a) => [ByteString] -> Tx (Maybe a)
+returnMaybe = sendCommand decodeAsMaybe
+returnInt :: [ByteString] -> Tx Int
+returnInt = sendCommand decodeAsInt
+returnList :: (Se a, Typeable a) => [ByteString] -> Tx [a]
+returnList = sendCommand decodeAsList
+returnStatus :: [ByteString] -> Tx Status
+returnStatus = sendCommand decodeAsStatus
 --------------------------------------------------------------------------------
 --  Tx'
 --------------------------------------------------------------------------------
@@ -191,3 +199,12 @@ runTx conn f = runRedis conn $ do
 -- re-export Redis shit
 connect = Redis.connect
 defaultConnectInfo = Redis.defaultConnectInfo
+
+data List n = List n
+    deriving (Generic, Typeable, Show, Eq)
+
+instance (Se n) => Se (List n)
+instance (Serialize n) => Serialize (List n)
+
+data Set n = Set n
+    deriving (Generic, Typeable, Show, Eq)

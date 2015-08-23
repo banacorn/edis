@@ -17,7 +17,7 @@ import           Database.Redis (sendRequest, Status(..))
 --------------------------------------------------------------------------------
 
 ping :: Tx Status
-ping = sendCommand decodeAsStatus ["PING"]
+ping = returnStatus ["PING"]
 
 --------------------------------------------------------------------------------
 --  String
@@ -36,7 +36,7 @@ set key val = do
         Just err -> do
             assertError err
             error (show err)
-        Nothing -> sendCommand decodeAsStatus ["SET", key, en val]
+        Nothing -> returnStatus ["SET", key, en val]
 
 incr :: Key -> Tx Int
 incr key = do
@@ -45,7 +45,7 @@ incr key = do
         Just err -> do
             assertError err
             error (show err)
-        Nothing -> sendCommand decodeAsInt ["INCR", key]
+        Nothing -> returnInt ["INCR", key]
 
 decr :: Key -> Tx Int
 decr key = do
@@ -54,11 +54,11 @@ decr key = do
         Just err -> do
             assertError err
             error (show err)
-        Nothing -> sendCommand decodeAsInt ["DECR", key]
+        Nothing -> returnInt ["DECR", key]
 
 get :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 get key = do
-    val <- sendCommand decodeAsMaybe ["GET", key]
+    val <- returnMaybe ["GET", key]
     typeError <- checkType key (carrier $ deferred val)
     case typeError of
         Just er -> do
@@ -69,7 +69,7 @@ get key = do
 del :: Key -> Tx Status
 del key = do
     removeType key
-    sendCommand decodeAsStatus ["DEL", key]
+    returnStatus ["DEL", key]
 
 --------------------------------------------------------------------------------
 --  List
@@ -82,12 +82,12 @@ lpush key val = do
         Just err -> do
             assertError err
             error (show err)
-        Nothing -> sendCommand decodeAsStatus ["LPUSH", key, en val]
+        Nothing -> returnStatus ["LPUSH", key, en val]
 
 
 lpop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 lpop key = do
-    val <- sendCommand decodeAsMaybe ["LPOP", key]
+    val <- returnMaybe ["LPOP", key]
     typeError <- checkType key (list $ carrier $ deferred val)
     case typeError of
         Just er -> do
@@ -97,11 +97,11 @@ lpop key = do
 
 llen :: Key -> Tx Int
 llen key = do
-    sendCommand decodeAsInt ["LLEN", key]
+    returnInt ["LLEN", key]
 
 lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx [a]
 lrange key m n = do
-    val <- sendCommand decodeAsList ["LRANGE", key, en m, en n]
+    val <- returnList ["LRANGE", key, en m, en n]
     typeError <- checkType key (deferred val)
     case typeError of
         Just er -> do
@@ -111,7 +111,7 @@ lrange key m n = do
 
 lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Maybe a)
 lindex key n = do
-    val <- sendCommand decodeAsMaybe ["LINDEX", key, en n]
+    val <- returnMaybe ["LINDEX", key, en n]
     typeError <- checkType key (list $ carrier $ deferred val)
     case typeError of
         Just er -> do
@@ -130,10 +130,10 @@ sadd key val = do
         Just err -> do
             assertError err
             error (show err)
-        Nothing -> sendCommand decodeAsStatus ["SADD", key, en val]
-
--- scard :: Set a -> Int
-scard :: Key -> Tx Int
-scard key = do
-    -- checkType key (list $ carrier $ deferred val)
-    sendCommand decodeAsInt ["SCARD", key]
+        Nothing -> returnStatus ["SADD", key, en val]
+--
+-- -- scard :: Set a -> Int
+-- scard :: Key -> Tx Int
+-- scard key = do
+--     -- checkType key (list $ carrier $ deferred val)
+--     returnInt ["SCARD", key]

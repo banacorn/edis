@@ -70,6 +70,8 @@ instance Generic Status where
 instance Serialize Status
 instance Se Status
 
+-- instance Se a => Se (List a)
+
 
 instance Se Bool
 instance Se Char

@@ -10,12 +10,6 @@ import           GHC.Generics
 --  type checking stuffs
 --------------------------------------------------------------------------------
 
-data List n = List n
-    deriving (Generic, Typeable, Show, Eq)
-
-data Set n = Set n
-    deriving (Generic, Typeable, Show, Eq)
-
 -- data Type = Type TypeRep
 --           | List TypeRep
 --           | ListOfAnything
