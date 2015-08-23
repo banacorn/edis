@@ -30,16 +30,16 @@ declare key = do
     return $ Deferred $ \_ -> Right val
 
 set :: (Se a, Typeable a) => Key -> a -> Tx Status
-set key val = checkType' key (returnStatus ["SET", key, en val]) (const $ typeOf val)
+set key val = compareType key (returnStatus ["SET", key, en val]) (typeOf val)
 
 incr :: Key -> Tx Int
-incr key = checkType' key (returnInt ["INCR", key]) (const $ typeRep (Proxy :: Proxy Int))
+incr key = compareType key (returnInt ["INCR", key]) (typeRep (Proxy :: Proxy Int))
 
 decr :: Key -> Tx Int
-decr key = checkType' key (returnInt ["DECR", key]) (const $ typeRep (Proxy :: Proxy Int))
+decr key = compareType key (returnInt ["DECR", key]) (typeRep (Proxy :: Proxy Int))
 
 get :: (Se a, Typeable a) => Key -> Tx (Maybe a)
-get key = checkType' key (returnMaybe ["GET", key]) (carrier . deferred)
+get key = compareCmdType key (returnMaybe ["GET", key]) (carrier . deferred)
 
 del :: Key -> Tx Status
 del key = do
@@ -51,20 +51,20 @@ del key = do
 --------------------------------------------------------------------------------
 
 lpush :: (Se a, Typeable a) => Key -> a -> Tx Status
-lpush key val = checkType' key (returnStatus ["LPUSH", key, en val]) (const $ typeOf $ List val)
+lpush key val = compareType key (returnStatus ["LPUSH", key, en val]) (typeOf $ List val)
 
 lpop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
-lpop key = checkType' key (returnMaybe ["LPOP", key]) (list . carrier . deferred)
+lpop key = compareCmdType key (returnMaybe ["LPOP", key]) (list . carrier . deferred)
 
 -- llen :: Key -> Tx Int
 -- llen key = do
 --     returnInt ["LLEN", key]
 
 lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx [a]
-lrange key m n = checkType' key (returnList ["LRANGE", key, en m, en n]) (list . carrier . deferred)
+lrange key m n = compareCmdType key (returnList ["LRANGE", key, en m, en n]) (list . carrier . deferred)
 
 lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Maybe a)
-lindex key n = checkType' key (returnMaybe ["LINDEX", key, en n]) (list . carrier . deferred)
+lindex key n = compareCmdType key (returnMaybe ["LINDEX", key, en n]) (list . carrier . deferred)
 
 --------------------------------------------------------------------------------
 --  Set

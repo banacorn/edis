@@ -26,30 +26,16 @@ checkType key got = do
             then return $ Nothing
             else return $ Just (TypeMismatch key expected got)
 
-    --
-    -- ret <- returnStatus ["SET", key, en val]
-    -- typeError <- checkType key (typeOf val)
-    -- case typeError of
-    --     Just err -> do
-    --         assertError err
-    --     Nothing -> return ret
-
-    --
-    -- val <- returnMaybe ["GET", key]
-    -- typeError <- checkType key (carrier $ deferred val)
-    -- case typeError of
-    --     Just er -> do
-    --         assertError er
-    --     Nothing -> return val
-
-checkType' :: Key -> Tx' a -> (a -> TypeRep) -> Tx' a
-checkType' key cmd f = do
+compareCmdType :: Key -> Tx' a -> (a -> TypeRep) -> Tx' a
+compareCmdType key cmd f = do
     returnValue <- cmd
     typeError <- checkType key (f returnValue)
     case typeError of
         Just er -> assertError er
         Nothing -> return returnValue
 
+compareType :: Key -> Tx' a -> TypeRep -> Tx' a
+compareType key cmd typ = compareCmdType key cmd (const typ)
 
 
 list :: TypeRep -> TypeRep
