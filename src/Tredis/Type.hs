@@ -60,7 +60,13 @@ data Type = Type TypeRep
           | ListOfAnything
           | Set' TypeRep
           | SetOfAnything
-          deriving (Show)
+
+instance Show Type where
+    show (Type n) = show n
+    show (List' n) = "List " ++ show n
+    show ListOfAnything = "List a"
+    show (Set' n) = "Set " ++ show n
+    show SetOfAnything = "Set a"
 
 instance Eq Type where
     Type s == Type t = s == t
@@ -77,3 +83,9 @@ data List n = List n
 
 instance Serialize n => Serialize (List n)
 instance Se n => Se (List n)
+
+data Set n = Set n
+    deriving (Eq, Show, Generic, Typeable)
+
+instance Serialize n => Serialize (Set n)
+instance Se n => Se (Set n)

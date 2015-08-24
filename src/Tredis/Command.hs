@@ -24,21 +24,24 @@ ping = returnStatus ["PING"]
 declare :: (Se a, Typeable a) => Key -> Tx a
 declare key = do
     let Right val = de "witchcraft" -- fake a value
-
-    let (tyCon, tyArgs) = splitTyConApp (typeOf val)
-    if tyCon == typeRepTyCon list
-        then    insertType key (List' $ head tyArgs)
-        else    insertType key (Type $ typeOf val)
+    insertType key (typeToInsert val)
     return $ Deferred $ \_ -> Right val
+    where   typeToInsert val
+                | tyCon == listTyCon = List' $ head tyArgs
+                | tyCon == setTyCon = Set' $ head tyArgs
+                | otherwise = Type $ typeOf val
+                where   (tyCon, tyArgs) = splitTyConApp (typeOf val)
+                        listTyCon = typeRepTyCon listTypeRep
+                        setTyCon = typeRepTyCon setTypeRep
 
 set :: (Se a, Typeable a) => Key -> a -> Tx Status
 set key val = compareType key (returnStatus ["SET", key, en val]) (Type (typeOf val))
 
 incr :: Key -> Tx Int
-incr key = compareType key (returnInt ["INCR", key]) (Type int)
+incr key = compareType key (returnInt ["INCR", key]) (Type intTypeRep)
 
 decr :: Key -> Tx Int
-decr key = compareType key (returnInt ["DECR", key]) (Type int)
+decr key = compareType key (returnInt ["DECR", key]) (Type intTypeRep)
 
 get :: (Se a, Typeable a) => Key -> Tx (Maybe a)
 get key = compareCmdType key (returnMaybe ["GET", key]) (Type . carrier . deferred)
@@ -71,16 +74,14 @@ lindex key n = compareCmdType key (returnMaybe ["LINDEX", key, en n]) (List' . c
 --  Set
 --------------------------------------------------------------------------------
 
--- sadd :: (Se a, Typeable a) => Key -> a -> Tx Status
--- sadd key val = do
---     typeError <- checkType key (typeOf $ Set val)
---     case typeError of
---         Just err -> do
---             assertError err
---         Nothing -> returnStatus ["SADD", key, en val]
---
--- -- scard :: Set a -> Int
--- scard :: Key -> Tx Int
--- scard key = do
---     -- checkType key (list $ carrier $ deferred val)
---     returnInt ["SCARD", key]
+sadd :: (Se a, Typeable a) => Key -> a -> Tx Status
+sadd key val = compareType key (returnStatus ["SADD", key, en val]) (Set' (typeOf val))
+
+scard :: Key -> Tx Int
+scard key = compareType key (returnInt ["SCARD", key]) SetOfAnything
+
+smembers :: (Se a, Typeable a) => Key -> Tx [a]
+smembers key = compareCmdType key (returnList ["SMEMBERS", key]) (Set' . carrier . deferred)
+
+spop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
+spop key = compareCmdType key (returnMaybe ["SPOP", key]) (Set' . carrier . deferred)

@@ -32,11 +32,14 @@ compareType key cmd typ = compareCmdType key cmd (const typ)
 
 
 
-int :: TypeRep
-int = typeRep (Proxy :: Proxy Int)
+intTypeRep :: TypeRep
+intTypeRep = typeRep (Proxy :: Proxy Int)
 
-list :: TypeRep
-list = typeRep (Proxy :: Proxy List)
+listTypeRep :: TypeRep
+listTypeRep = typeRep (Proxy :: Proxy List)
+
+setTypeRep :: TypeRep
+setTypeRep = typeRep (Proxy :: Proxy Set)
 
 carrier :: TypeRep -> TypeRep
 carrier = head . typeRepArgs
