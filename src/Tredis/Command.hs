@@ -75,6 +75,9 @@ lindex key n = compareResult key (returnMaybe (LINDEX key n)) (ListType . carrie
 sadd :: Value a => Key -> a -> Tx Status
 sadd key val = compareType key (returnStatus (SADD key val)) (SetType (typeOf val))
 
+srem :: Key -> Tx Int
+srem key = compareType key (returnInt (SREM key)) SetOfAnything
+
 scard :: Key -> Tx Int
 scard key = compareType key (returnInt (SCARD key)) SetOfAnything
 

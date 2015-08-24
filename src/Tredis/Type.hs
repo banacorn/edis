@@ -148,6 +148,7 @@ data Command where
 
     -- set
     SADD :: Value a => Key -> a -> Command
+    SREM :: Key -> Command
     SCARD :: Key -> Command
     SMEMBERS :: Key -> Command
     SPOP :: Key -> Command
@@ -168,6 +169,7 @@ instance Show Command where
     show (LINDEX k n)   = "LINDEX " ++ unpack k ++ " " ++ unpack (en n)
     -- set
     show (SADD k v)     = "SADD " ++ unpack k ++ " " ++ unpack (en v)
+    show (SREM k)      = "SREM " ++ unpack k
     show (SCARD k)      = "SCARD " ++ unpack k
     show (SMEMBERS k)   = "SMEMBERS " ++ unpack k
     show (SPOP k)       = "SCARD " ++ unpack k
