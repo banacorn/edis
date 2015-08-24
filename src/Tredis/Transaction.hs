@@ -2,7 +2,8 @@
 
 module Tredis.Transaction where
 
-import Tredis.Serialize
+import           Tredis.Serialize
+import           Tredis.Type
 
 import           Data.Typeable
 import           GHC.Generics
@@ -16,48 +17,9 @@ import           Data.Map (Map)
 import qualified Database.Redis as Redis
 import           Database.Redis (Redis, runRedis, Reply(..), sendRequest, Status(..))
 
-type Tx' = State TxState
-type Tx a = Tx' (Deferred a)
-type Key = ByteString
-
-data TypeError
-    = Undeclared Key
-    | TypeMismatch Key TypeRep TypeRep
-
-instance Show TypeError where
-    show (Undeclared key) = "Undeclared: " ++ unpack key
-    show (TypeMismatch key exp got) = "TypeMismatch: expect '" ++ show exp ++ "', got '" ++ show got ++ "'"
-
-data Deferred a = Deferred ([Reply] -> Either Reply a)
-    deriving Typeable
-
-instance Functor Deferred where
-    fmap f (Deferred g) = Deferred (fmap f . g)
-
-instance Applicative Deferred where
-    pure x                = Deferred (const $ Right x)
-    Deferred f <*> Deferred x = Deferred $ \rs -> do
-                                        f' <- f rs
-                                        x' <- x rs
-                                        return (f' x')
-
-instance Monad Deferred where
-    return         = pure
-    Deferred x >>= f = Deferred $ \rs -> do
-                                x' <- x rs
-                                let Deferred f' = f x'
-                                f' rs
-
 --------------------------------------------------------------------------------
 --  TxState manipulation
 --------------------------------------------------------------------------------
-
-data TxState = TxState
-    {   commands :: [Redis (Either Reply Status)]
-    ,   typeTable :: Map Key TypeRep
-    ,   typeError :: [(Int, TypeError)]
-    ,   counter :: Int
-    }
 
 defaultTxState :: TxState
 defaultTxState = TxState [] Map.empty [] 0
@@ -80,17 +42,17 @@ removeType key = do
     let table = typeTable state
     put $ state { typeTable = Map.delete key table }
 
-lookupType :: Key -> Tx' (Maybe TypeRep)
+lookupType :: Key -> Tx' (Maybe Type)
 lookupType key = do
     state <- get
     let table = typeTable state
     return $ Map.lookup key table
 
-insertType :: Key -> TypeRep -> Tx' ()
-insertType key typeRep = do
+insertType :: Key -> Type -> Tx' ()
+insertType key typ = do
     state <- get
     let table = typeTable state
-    put $ state { typeTable = Map.insert key typeRep table }
+    put $ state { typeTable = Map.insert key typ table }
 
 -- type error
 assertError :: TypeError -> Tx' a
@@ -117,28 +79,28 @@ decode :: (Se a, Typeable a) => Reply -> Either Reply a
 decode (Bulk (Just raw)) = case de raw of
     Left er -> Left (Error $ pack er)
     Right v -> Right v
-decode others = error $ show others
+decode others = error $ "should be (Bulk _), but got " ++ show others
 
 decodeAsMaybe :: (Se a, Typeable a) => Reply -> Either Reply (Maybe a)
 decodeAsMaybe (Bulk (Just raw)) = case de raw of
     Left er -> Left (Error $ pack er)
     Right v -> Right (Just v)
 decodeAsMaybe (Bulk Nothing) = Right Nothing
-decodeAsMaybe others = error $ show others
+decodeAsMaybe others = error $ "should be (Bulk _), but got " ++ show others
 
 decodeAsList :: (Se a, Typeable a) => Reply -> Either Reply [a]
 decodeAsList (MultiBulk (Just raw)) = mapM decode raw
-decodeAsList others = error $ show others
+decodeAsList others = error $ "should be (MultiBulk (Just _)), but got " ++ show others
 
 decodeAsInt :: Reply -> Either Reply Int
 decodeAsInt (Integer n) = Right (fromInteger n)
-decodeAsInt others = error $ show others
+decodeAsInt others = error $ "should be (Integer _), but got " ++ show others
 
 decodeAsStatus :: Reply -> Either Reply Status
 decodeAsStatus (SingleLine "OK") = Right Ok
 decodeAsStatus (SingleLine "PONG") = Right Pong
 decodeAsStatus (SingleLine s) = Right (Status s)
-decodeAsStatus others = error $ show others
+decodeAsStatus others = error $ "should be (SingleLine _), but got " ++ show others
 
 returnAnything :: (Se a, Typeable a) => [ByteString] -> Tx a
 returnAnything = sendCommand decode
@@ -200,15 +162,3 @@ runTx conn f = runRedis conn $ do
 -- re-export Redis shit
 connect = Redis.connect
 defaultConnectInfo = Redis.defaultConnectInfo
-
-data List n = List n
-    deriving (Generic, Typeable, Show, Eq)
-
-instance (Se n) => Se (List n)
-instance (Serialize n) => Serialize (List n)
-
-data Set n = Set n
-    deriving (Generic, Typeable, Show, Eq)
-
-instance (Se n) => Se (Set n)
-instance (Serialize n) => Serialize (Set n)

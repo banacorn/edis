@@ -4,6 +4,7 @@ module Main where
 
 import Tredis.Transaction
 import Tredis.Command
+import Tredis.Type
 
 import Data.Serialize (Serialize)
 import Control.Applicative
@@ -19,12 +20,12 @@ main = do
 
         declare "list" :: Tx (List Int)
         lpush "list" (3 :: Int)
-        lpop "list" :: Tx (Maybe Int)
-        lrange "list" 0 (-2) :: Tx [Int]
+        -- lpop "list" :: Tx (Maybe Int)
+        -- lrange "list" 0 (-2) :: Tx [Int]
         -- llen "list"
-        lindex "list" 2 :: Tx (Maybe Int)
+        -- lindex "list" 2 :: Tx (Maybe Int)
 
-        -- -- string
+        -- string
         -- declare "n" :: Tx Int
         -- set "n" (42 :: Int)
         -- incr "n"
