@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Tredis.Transaction where
 
@@ -6,14 +6,12 @@ import           Tredis.Serialize
 import           Tredis.Type
 
 import           Data.Typeable
-import           GHC.Generics
-import           Control.Applicative
+import           Control.Applicative ((<$>))
 import           Control.Monad.State
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (pack, unpack)
 import           Data.Serialize (Serialize)
 import qualified Data.Map as Map
-import           Data.Map (Map)
 import qualified Database.Redis as Redis
 import           Database.Redis (Redis, runRedis, Reply(..), sendRequest, Status(..))
 
@@ -75,11 +73,13 @@ sendCommand decoder cmd = do
     return $ Deferred (decoder . select count)
     where   select = flip (!!)
 
-decode :: (Se a, Typeable a) => Reply -> Either Reply a
-decode (Bulk (Just raw)) = case de raw of
+
+decodeAsAnything :: (Se a, Typeable a) => Reply -> Either Reply a
+decodeAsAnything (Bulk (Just raw)) = case de raw of
     Left er -> Left (Error $ pack er)
     Right v -> Right v
-decode others = error $ "should be (Bulk _), but got " ++ show others
+decodeAsAnything others = error $ "should be (Bulk _), but got " ++ show others
+
 
 decodeAsMaybe :: (Se a, Typeable a) => Reply -> Either Reply (Maybe a)
 decodeAsMaybe (Bulk (Just raw)) = case de raw of
@@ -89,7 +89,7 @@ decodeAsMaybe (Bulk Nothing) = Right Nothing
 decodeAsMaybe others = error $ "should be (Bulk _), but got " ++ show others
 
 decodeAsList :: (Se a, Typeable a) => Reply -> Either Reply [a]
-decodeAsList (MultiBulk (Just raw)) = mapM decode raw
+decodeAsList (MultiBulk (Just raw)) = mapM decodeAsAnything raw
 decodeAsList others = error $ "should be (MultiBulk (Just _)), but got " ++ show others
 
 decodeAsInt :: Reply -> Either Reply Int
@@ -103,7 +103,7 @@ decodeAsStatus (SingleLine s) = Right (Status s)
 decodeAsStatus others = error $ "should be (SingleLine _), but got " ++ show others
 
 returnAnything :: (Se a, Typeable a) => [ByteString] -> Tx a
-returnAnything = sendCommand decode
+returnAnything = sendCommand decodeAsAnything
 returnMaybe :: (Se a, Typeable a) => [ByteString] -> Tx (Maybe a)
 returnMaybe = sendCommand decodeAsMaybe
 returnInt :: [ByteString] -> Tx Int
@@ -112,6 +112,8 @@ returnList :: (Se a, Typeable a) => [ByteString] -> Tx [a]
 returnList = sendCommand decodeAsList
 returnStatus :: [ByteString] -> Tx Status
 returnStatus = sendCommand decodeAsStatus
+
+
 --------------------------------------------------------------------------------
 --  Tx'
 --------------------------------------------------------------------------------

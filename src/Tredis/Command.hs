@@ -1,18 +1,14 @@
-{-# LANGUAGE GADTs, OverloadedStrings, RankNTypes, TypeOperators #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Tredis.Command where
 
 import Tredis.Transaction
 import Tredis.Serialize
 import Tredis.TypeChecking
-import           Tredis.Type
+import Tredis.Type
 import Data.Typeable
 
-import qualified Data.ByteString as B
-import           Data.ByteString (ByteString)
-import           Data.ByteString.Char8 (pack, unpack)
-import           Data.Serialize (Serialize)
-import           Database.Redis (sendRequest, Status(..))
+import Database.Redis (Status(..))
 
 --------------------------------------------------------------------------------
 --  Connection

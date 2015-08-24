@@ -1,5 +1,3 @@
-{-# LANGUAGE GADTs, OverloadedStrings, DeriveGeneric, DeriveDataTypeable #-}
-
 module Tredis.TypeChecking where
 
 import           Tredis.Transaction
@@ -29,21 +27,10 @@ compareCmdType key cmd f = do
         Just er -> assertError er
         Nothing -> return returnValue
 
--- compareCmdType' :: Key -> Tx' a -> (a -> Type) -> Tx' a
--- compareCmdType' key cmd f = do
---     returnValue <- cmd
---     typeError <- checkType key (f returnValue)
---     case typeError of
---         Just er -> assertError er
---         Nothing -> return returnValue
-
 compareType :: Key -> Tx' a -> Type -> Tx' a
 compareType key cmd typ = compareCmdType key cmd (const typ)
 
 
-
-typeof :: Typeable a => a -> Type
-typeof = Type . typeOf
 
 int :: TypeRep
 int = typeRep (Proxy :: Proxy Int)
@@ -59,5 +46,3 @@ deferred = carrier . typeOf
 
 toList' :: Typeable n => List n -> Type
 toList' (List n) = List' (typeOf n)
--- toList :: Typeable n => Type -> List n
--- toList (List')

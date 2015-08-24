@@ -6,8 +6,7 @@ import           Tredis.Serialize
 
 import           GHC.Generics
 import           Control.Applicative (Applicative(..))
-import           Control.Monad.State
-import qualified Data.Map as Map
+import           Control.Monad.State (State)
 import           Data.Map (Map)
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (pack, unpack)
