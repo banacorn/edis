@@ -48,26 +48,26 @@ del :: Key -> Tx Status
 del key = do
     removeType key
     returnStatus (DEL key)
---
--- --------------------------------------------------------------------------------
--- --  List
--- --------------------------------------------------------------------------------
---
--- lpush :: Value a => Key -> a -> Tx Int
--- lpush key val = compareType key (returnInt ["LPUSH", key, en val]) (ListType  (typeOf val))
---
--- lpop :: Value a => Key -> Tx (Maybe a)
--- lpop key = compareCmdType key (returnMaybe ["LPOP", key]) (ListType  . carrier . deferred)
---
--- llen :: Key -> Tx Int
--- llen key = compareType key (returnInt ["LLEN", key]) ListOfAnything
---
--- lrange :: Value a => Key -> Integer -> Integer -> Tx [a]
--- lrange key m n = compareCmdType key (returnList  ["LRANGE", key, en m, en n]) (ListType  . carrier . deferred)
---
--- lindex :: Value a => Key -> Integer -> Tx (Maybe a)
--- lindex key n = compareCmdType key (returnMaybe ["LINDEX", key, en n]) (ListType  . carrier . deferred)
---
+
+--------------------------------------------------------------------------------
+--  List
+--------------------------------------------------------------------------------
+
+lpush :: Value a => Key -> a -> Tx Int
+lpush key val = compareType key (returnInt (LPUSH key val)) (ListType  (typeOf val))
+
+lpop :: Value a => Key -> Tx (Maybe a)
+lpop key = compareCmdType key (returnMaybe (LPOP key)) (ListType  . carrier . deferred)
+
+llen :: Key -> Tx Int
+llen key = compareType key (returnInt (LLEN key)) ListOfAnything
+
+lrange :: Value a => Key -> Integer -> Integer -> Tx [a]
+lrange key m n = compareCmdType key (returnList  (LRANGE key m n)) (ListType  . carrier . deferred)
+
+lindex :: Value a => Key -> Integer -> Tx (Maybe a)
+lindex key n = compareCmdType key (returnMaybe (LINDEX key n)) (ListType  . carrier . deferred)
+
 -- --------------------------------------------------------------------------------
 -- --  Set
 -- --------------------------------------------------------------------------------

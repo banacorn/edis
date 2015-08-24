@@ -98,8 +98,32 @@ instance Value Status
 
 data Command where
     PING :: Command
+
+    -- string
     SET :: Value a => Key -> a -> Command
     GET :: Key -> Command
     DEL :: Key -> Command
     INCR :: Key -> Command
     DECR :: Key -> Command
+
+    -- list
+    LPUSH :: Value a => Key -> a -> Command
+    LPOP :: Key -> Command
+    LLEN :: Key -> Command
+    LRANGE :: Key -> Integer -> Integer -> Command
+    LINDEX :: Key -> Integer -> Command
+
+instance Show Command where
+    show PING           = "PING"
+    -- string
+    show (SET k v)      = "SET " ++ unpack k ++ " " ++ unpack (en v)
+    show (GET k)        = "GET " ++ unpack k
+    show (DEL k)        = "DEL " ++ unpack k
+    show (INCR k)       = "INCR " ++ unpack k
+    show (DECR k)       = "DECR " ++ unpack k
+    -- list
+    show (LPUSH k v)    = "LPUSH " ++ unpack k ++ " " ++ unpack (en v)
+    show (LPOP k)       = "LPOP " ++ unpack k
+    show (LLEN k)       = "LLEN " ++ unpack k
+    show (LRANGE k m n) = "LRANGE " ++ unpack k ++ " " ++ unpack (en m) ++ " " ++ unpack (en n)
+    show (LINDEX k n)   = "LINDEX " ++ unpack k ++ " " ++ unpack (en n)

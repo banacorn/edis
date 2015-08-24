@@ -119,12 +119,19 @@ returnStatus = sendCommand decodeAsStatus
 
 toRedisCommand :: Command -> Redis (Either Reply Redis.Status)
 toRedisCommand PING = sendRequest ["PING"]
+-- string
 toRedisCommand (SET key val) = sendRequest ["SET", key, en val]
 toRedisCommand (GET key) = sendRequest ["GET", key]
 toRedisCommand (DEL key) = sendRequest ["DEL", key]
 toRedisCommand (INCR key) = sendRequest ["INCR", key]
 toRedisCommand (DECR key) = sendRequest ["DECR", key]
-
+-- list
+toRedisCommand (LPUSH key val) = sendRequest ["LPUSH", key, en val]
+toRedisCommand (LPOP key) = sendRequest ["LPOP", key]
+toRedisCommand (LLEN key) = sendRequest ["LLEN", key]
+toRedisCommand (LRANGE key m n) = sendRequest ["LRANGE", key, en m, en n]
+toRedisCommand (LINDEX key n) = sendRequest ["LINDEX", key, en n]
+-- toRedisCommand others = error $ "unrecognized command: " ++ show others
 --------------------------------------------------------------------------------
 --  Tx'
 --------------------------------------------------------------------------------
