@@ -68,18 +68,18 @@ lrange key m n = compareCmdType key (returnList  (LRANGE key m n)) (ListType  . 
 lindex :: Value a => Key -> Integer -> Tx (Maybe a)
 lindex key n = compareCmdType key (returnMaybe (LINDEX key n)) (ListType  . carrier . deferred)
 
--- --------------------------------------------------------------------------------
--- --  Set
--- --------------------------------------------------------------------------------
---
--- sadd :: Value a => Key -> a -> Tx Status
--- sadd key val = compareType key (returnStatus ["SADD", key, en val]) (SetType  (typeOf val))
---
--- scard :: Key -> Tx Int
--- scard key = compareType key (returnInt ["SCARD", key]) SetOfAnything
---
--- smembers :: Value a => Key -> Tx [a]
--- smembers key = compareCmdType key (returnList ["SMEMBERS", key]) (SetType  . carrier . deferred)
---
--- spop :: Value a => Key -> Tx (Maybe a)
--- spop key = compareCmdType key (returnMaybe ["SPOP", key]) (SetType  . carrier . deferred)
+--------------------------------------------------------------------------------
+--  Set
+--------------------------------------------------------------------------------
+
+sadd :: Value a => Key -> a -> Tx Status
+sadd key val = compareType key (returnStatus (SADD key val)) (SetType  (typeOf val))
+
+scard :: Key -> Tx Int
+scard key = compareType key (returnInt (SCARD key)) SetOfAnything
+
+smembers :: Value a => Key -> Tx [a]
+smembers key = compareCmdType key (returnList (SMEMBERS key)) (SetType  . carrier . deferred)
+
+spop :: Value a => Key -> Tx (Maybe a)
+spop key = compareCmdType key (returnMaybe (SPOP key)) (SetType  . carrier . deferred)

@@ -131,6 +131,11 @@ toRedisCommand (LPOP key) = sendRequest ["LPOP", key]
 toRedisCommand (LLEN key) = sendRequest ["LLEN", key]
 toRedisCommand (LRANGE key m n) = sendRequest ["LRANGE", key, en m, en n]
 toRedisCommand (LINDEX key n) = sendRequest ["LINDEX", key, en n]
+-- set
+toRedisCommand (SADD key val) = sendRequest ["SADD", key, en val]
+toRedisCommand (SCARD key) = sendRequest ["SCARD", key]
+toRedisCommand (SMEMBERS key) = sendRequest ["SMEMBERS", key]
+toRedisCommand (SPOP key) = sendRequest ["SPOP", key]
 -- toRedisCommand others = error $ "unrecognized command: " ++ show others
 --------------------------------------------------------------------------------
 --  Tx'

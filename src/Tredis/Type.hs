@@ -113,6 +113,12 @@ data Command where
     LRANGE :: Key -> Integer -> Integer -> Command
     LINDEX :: Key -> Integer -> Command
 
+    -- set
+    SADD :: Value a => Key -> a -> Command
+    SCARD :: Key -> Command
+    SMEMBERS :: Key -> Command
+    SPOP :: Key -> Command
+
 instance Show Command where
     show PING           = "PING"
     -- string
@@ -127,3 +133,8 @@ instance Show Command where
     show (LLEN k)       = "LLEN " ++ unpack k
     show (LRANGE k m n) = "LRANGE " ++ unpack k ++ " " ++ unpack (en m) ++ " " ++ unpack (en n)
     show (LINDEX k n)   = "LINDEX " ++ unpack k ++ " " ++ unpack (en n)
+    -- set
+    show (SADD k v)     = "SADD " ++ unpack k ++ " " ++ unpack (en v)
+    show (SCARD k)      = "SCARD " ++ unpack k
+    show (SMEMBERS k)   = "SMEMBERS " ++ unpack k
+    show (SPOP k)       = "SCARD " ++ unpack k
