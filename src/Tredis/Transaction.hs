@@ -106,14 +106,14 @@ decodeAsStatus (SingleLine "PONG") = Right Pong
 decodeAsStatus (SingleLine s) = Right (Status s)
 decodeAsStatus others = error $ "should be (SingleLine _), but got " ++ show others
 
--- returnAnything :: Value a => [ByteString] -> Tx a
--- returnAnything = sendCommand decodeAsAnything
+returnAnything :: Value a => Command -> Tx a
+returnAnything = sendCommand decodeAsAnything
 returnMaybe :: Value a => Command -> Tx (Maybe a)
 returnMaybe = sendCommand decodeAsMaybe
--- returnInt :: [ByteString] -> Tx Int
--- returnInt = sendCommand decodeAsInt
--- returnList :: Value a => [ByteString] -> Tx [a]
--- returnList = sendCommand decodeAsList
+returnInt :: Command -> Tx Int
+returnInt = sendCommand decodeAsInt
+returnList :: Value a => Command -> Tx [a]
+returnList = sendCommand decodeAsList
 returnStatus :: Command -> Tx Status
 returnStatus = sendCommand decodeAsStatus
 
@@ -121,6 +121,9 @@ toRedisCommand :: Command -> Redis (Either Reply Redis.Status)
 toRedisCommand PING = sendRequest ["PING"]
 toRedisCommand (SET key val) = sendRequest ["SET", key, en val]
 toRedisCommand (GET key) = sendRequest ["GET", key]
+toRedisCommand (DEL key) = sendRequest ["DEL", key]
+toRedisCommand (INCR key) = sendRequest ["INCR", key]
+toRedisCommand (DECR key) = sendRequest ["DECR", key]
 
 --------------------------------------------------------------------------------
 --  Tx'

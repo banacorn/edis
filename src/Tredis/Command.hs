@@ -35,19 +35,19 @@ declare key = do
 set :: Value a => Key -> a -> Tx Status
 set key val = compareType key (returnStatus (SET key val)) (Type (typeOf val))
 
--- incr :: Key -> Tx Int
--- incr key = compareType key (returnInt (["INCR", key])) (Type intTypeRep)
+incr :: Key -> Tx Int
+incr key = compareType key (returnInt (INCR key)) (Type intTypeRep)
 
--- decr :: Key -> Tx Int
--- decr key = compareType key (returnInt ["DECR", key]) (Type intTypeRep)
+decr :: Key -> Tx Int
+decr key = compareType key (returnInt (DECR key)) (Type intTypeRep)
 
 get :: Value a => Key -> Tx (Maybe a)
 get key = compareCmdType key (returnMaybe (GET key)) (Type . carrier . deferred)
 
--- del :: Key -> Tx Status
--- del key = do
---     removeType key
---     returnStatus ["DEL", key]
+del :: Key -> Tx Status
+del key = do
+    removeType key
+    returnStatus (DEL key)
 --
 -- --------------------------------------------------------------------------------
 -- --  List

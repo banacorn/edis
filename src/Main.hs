@@ -7,20 +7,20 @@ import Tredis
 program = do
 
     ping
-    -- declare "a" :: Tx Int
-    -- incr "a"
 
+
+    -- declare "string" :: Tx Int
+    -- set "string" (42 :: Int)
+    -- incr "string"
+    -- get "string" :: Tx (Maybe Int)
+
+    
     -- declare "list" :: Tx (List Int)
     -- lpush "list" (3 :: Int)
     -- lpop "list" :: Tx (Maybe Int)
     -- lrange "list" 0 (-2) :: Tx [Int]
     -- llen "list"
     -- lindex "list" 2 :: Tx (Maybe Int)
-
-    declare "string" :: Tx Int
-    set "string" (42 :: Int)
-    -- incr "string"
-    get "string" :: Tx (Maybe Int)
 
     --
     -- declare "set" :: Tx (Set Int)

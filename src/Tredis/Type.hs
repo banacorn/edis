@@ -100,4 +100,6 @@ data Command where
     PING :: Command
     SET :: Value a => Key -> a -> Command
     GET :: Key -> Command
-    -- Incr :: Key -> Command
+    DEL :: Key -> Command
+    INCR :: Key -> Command
+    DECR :: Key -> Command
