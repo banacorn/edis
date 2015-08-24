@@ -17,94 +17,56 @@ import Data.Monoid (All, Any, Dual, Sum, Product, First, Last)
 import Data.Ratio (Ratio)
 
 
-class Serialize a => Se a where
+class (Serialize a, Typeable a) => Value a where
     en :: a -> ByteString
     en = encode
     de :: ByteString -> Either String a
     de = decode
 
-instance Se Int where
+instance Value Int where
     en = pack . show
     de = Right . read . unpack
 
-instance Se Integer where
+instance Value Integer where
     en = pack . show
     de = Right . read . unpack
 
 
-data D1Status
-data C1StatusOk
-data C1StatusPong
-data C1StatusStatus
 
-
--- derive Status an instance of Generic manually, for Serialize's sake
-instance Datatype D1Status where
-    datatypeName _ = "Status"
-    moduleName _   = "Database.Redis"
-instance Constructor C1StatusOk where
-    conName _ = "Ok"
-instance Constructor C1StatusPong where
-    conName _ = "Pong"
-instance Constructor C1StatusStatus where
-    conName _ = "Status"
-
-instance Generic Status where
-    -- Representation type
-    type Rep Status = D1 D1Status (
-            C1 C1StatusOk U1
-        :+: C1 C1StatusPong U1
-        :+: C1 C1StatusStatus (S1 NoSelector (K1 R ByteString)))
-    -- Conversion functions
-    from Ok = M1 (L1 (M1 U1))
-    from Pong = M1 (R1 (L1 (M1 U1)))
-    from (Status s) = M1 (R1 (R1 (M1 (M1 (K1 s)))))
-
-    to (M1 (L1 (M1 U1))) = Ok
-    to (M1 (R1 (L1 (M1 U1)))) = Pong
-    to (M1 (R1 (R1 (M1 (M1 (K1 s)))))) = Status s
-
- -- hooray
-instance Serialize Status
-instance Se Status
-
--- instance Se a => Se (List a)
-
-
-instance Se Bool
-instance Se Char
-instance Se Double
-instance Se Float
-instance Se Int8
-instance Se Int16
-instance Se Int32
-instance Se Int64
-instance Se Ordering
-instance Se Word
-instance Se Word8
-instance Se Word16
-instance Se Word32
-instance Se Word64
-instance Se All
-instance Se Any
-instance Se ByteString
-instance Se L.ByteString
-instance Se a => Se [a]
-instance (Se a, Integral a) => Se (Ratio a)
-instance Se a => Se (Dual a)
-instance Se a => Se (Sum a)
-instance Se a => Se (Product a)
-instance Se a => Se (First a)
-instance Se a => Se (Last a)
-instance Se a => Se (Maybe a)
-instance (Se a, Se b) => Se (Either a b)
-instance Se ()
-instance (Se a, Se b) => Se (a, b)
-instance (Se a, Se b, Se c) => Se (a, b, c)
-instance (Se a, Se b, Se c, Se d) => Se (a, b, c, d)
-instance (Se a, Se b, Se c, Se d, Se e) => Se (a, b, c, d, e)
-instance (Se a, Se b, Se c, Se d, Se e, Se f) => Se (a, b, c, d, e, f)
-instance (Se a, Se b, Se c, Se d, Se e, Se f, Se g) => Se (a, b, c, d, e, f, g)
-instance (Se a, Se b, Se c, Se d, Se e, Se f, Se g, Se h) => Se (a, b, c, d, e, f, g, h)
-instance (Se a, Se b, Se c, Se d, Se e, Se f, Se g, Se h, Se i) => Se (a, b, c, d, e, f, g, h, i)
-instance (Se a, Se b, Se c, Se d, Se e, Se f, Se g, Se h, Se i, Se j) => Se (a, b, c, d, e, f, g, h, i, j)
+instance Value Bool
+instance Value Char
+instance Value Double
+instance Value Float
+instance Value Int8
+instance Value Int16
+instance Value Int32
+instance Value Int64
+instance Value Ordering
+instance Value Word
+instance Value Word8
+instance Value Word16
+instance Value Word32
+instance Value Word64
+-- instance Value All
+-- instance Value Any
+instance Value ByteString
+instance Value L.ByteString
+instance Value a => Value [a]
+instance (Value a, Integral a) => Value (Ratio a)
+-- instance Value a => Value (Dual a)
+-- instance Value a => Value (Sum a)
+-- instance Value a => Value (Product a)
+-- instance Value a => Value (First a)
+-- instance Value a => Value (Last a)
+instance Value a => Value (Maybe a)
+instance (Value a, Value b) => Value (Either a b)
+instance Value ()
+instance (Value a, Value b) => Value (a, b)
+instance (Value a, Value b, Value c) => Value (a, b, c)
+instance (Value a, Value b, Value c, Value d) => Value (a, b, c, d)
+instance (Value a, Value b, Value c, Value d, Value e) => Value (a, b, c, d, e)
+instance (Value a, Value b, Value c, Value d, Value e, Value f) => Value (a, b, c, d, e, f)
+instance (Value a, Value b, Value c, Value d, Value e, Value f, Value g) => Value (a, b, c, d, e, f, g)
+-- instance (Value a, Value b, Value c, Value d, Value e, Value f, Value g, Value h) => Value (a, b, c, d, e, f, g, h)
+-- instance (Value a, Value b, Value c, Value d, Value e, Value f, Value g, Value h, Value i) => Value (a, b, c, d, e, f, g, h, i)
+-- instance (Value a, Value b, Value c, Value d, Value e, Value f, Value g, Value h, Value i, Value j) => Value (a, b, c, d, e, f, g, h, i, j)

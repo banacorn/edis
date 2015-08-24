@@ -13,7 +13,7 @@ import           Data.ByteString.Char8 (pack, unpack)
 import           Data.Serialize (Serialize)
 import qualified Data.Map as Map
 import qualified Database.Redis as Redis
-import           Database.Redis (Redis, runRedis, Reply(..), sendRequest, Status(..))
+import           Database.Redis (Redis, runRedis, Reply(..), sendRequest)
 
 --------------------------------------------------------------------------------
 --  TxState manipulation
@@ -66,29 +66,33 @@ assertError err = do
 --  send command
 --------------------------------------------------------------------------------
 
+toStatus :: Redis.Status -> Status
+toStatus Redis.Pong = Pong
+toStatus Redis.Ok = Ok
+toStatus (Redis.Status n) = Status n
 
-sendCommand :: (Se a) => (Reply -> Either Reply a) -> [ByteString] -> Tx a
+sendCommand :: (Value a) => (Reply -> Either Reply a) -> [ByteString] -> Tx a
 sendCommand decoder cmd = do
     count <- insertCommand cmd
     return $ Deferred (decoder . select count)
     where   select = flip (!!)
 
 
-decodeAsAnything :: (Se a, Typeable a) => Reply -> Either Reply a
+decodeAsAnything :: Value a => Reply -> Either Reply a
 decodeAsAnything (Bulk (Just raw)) = case de raw of
     Left er -> Left (Error $ pack er)
     Right v -> Right v
 decodeAsAnything others = error $ "should be (Bulk _), but got " ++ show others
 
 
-decodeAsMaybe :: (Se a, Typeable a) => Reply -> Either Reply (Maybe a)
+decodeAsMaybe :: Value a => Reply -> Either Reply (Maybe a)
 decodeAsMaybe (Bulk (Just raw)) = case de raw of
     Left er -> Left (Error $ pack er)
     Right v -> Right (Just v)
 decodeAsMaybe (Bulk Nothing) = Right Nothing
 decodeAsMaybe others = error $ "should be (Bulk _), but got " ++ show others
 
-decodeAsList :: (Se a, Typeable a) => Reply -> Either Reply [a]
+decodeAsList :: Value a => Reply -> Either Reply [a]
 decodeAsList (MultiBulk (Just raw)) = mapM decodeAsAnything raw
 decodeAsList others = error $ "should be (MultiBulk (Just _)), but got " ++ show others
 
@@ -102,13 +106,13 @@ decodeAsStatus (SingleLine "PONG") = Right Pong
 decodeAsStatus (SingleLine s) = Right (Status s)
 decodeAsStatus others = error $ "should be (SingleLine _), but got " ++ show others
 
-returnAnything :: (Se a, Typeable a) => [ByteString] -> Tx a
+returnAnything :: Value a => [ByteString] -> Tx a
 returnAnything = sendCommand decodeAsAnything
-returnMaybe :: (Se a, Typeable a) => [ByteString] -> Tx (Maybe a)
+returnMaybe :: Value a => [ByteString] -> Tx (Maybe a)
 returnMaybe = sendCommand decodeAsMaybe
 returnInt :: [ByteString] -> Tx Int
 returnInt = sendCommand decodeAsInt
-returnList :: (Se a, Typeable a) => [ByteString] -> Tx [a]
+returnList :: Value a => [ByteString] -> Tx [a]
 returnList = sendCommand decodeAsList
 returnStatus :: [ByteString] -> Tx Status
 returnStatus = sendCommand decodeAsStatus
@@ -119,7 +123,7 @@ returnStatus = sendCommand decodeAsStatus
 --------------------------------------------------------------------------------
 
 -- execute
-execTx :: Se a => Tx a -> Redis (Either Reply a)
+execTx :: Value a => Tx a -> Redis (Either Reply a)
 execTx f = do
 
     -- issue MULTI
@@ -141,17 +145,17 @@ execTx f = do
         _ -> error "something went wrong"
 
     where
-        multi :: Redis (Either Reply Status)
+        multi :: Redis (Either Reply Redis.Status)
         multi = sendRequest ["MULTI"]
         exec :: Redis Reply
         exec = either id id <$> sendRequest ["EXEC"]
 
-checkTx :: Se a => Tx a -> [(Int, TypeError)]
+checkTx :: Value a => Tx a -> [(Int, TypeError)]
 checkTx f =
     let state = execState f defaultTxState in
     reverse $ typeError state
 
-runTx :: (Serialize a, Se a) => Redis.Connection -> Tx a -> IO (Either [(Int, TypeError)] (Either Reply a))
+runTx :: (Serialize a, Value a) => Redis.Connection -> Tx a -> IO (Either [(Int, TypeError)] (Either Reply a))
 runTx conn f = runRedis conn $ do
     let state = execState f defaultTxState
 

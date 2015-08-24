@@ -13,7 +13,7 @@ import           Data.ByteString.Char8 (pack, unpack)
 import           Data.Serialize (Serialize)
 import           Data.Typeable
 import qualified Database.Redis as Redis
-import           Database.Redis (Redis, Reply(..), Status(..))
+import           Database.Redis (Redis, Reply(..))
 
 
 type Tx' = State TxState
@@ -49,7 +49,7 @@ instance Monad Deferred where
                                 f' rs
 
 data TxState = TxState
-    {   commands :: [Redis (Either Reply Status)]
+    {   commands :: [Redis (Either Reply Redis.Status)]
     ,   typeTable :: Map Key Type
     ,   typeError :: [(Int, TypeError)]
     ,   counter :: Int
@@ -82,14 +82,21 @@ data RList n = RList n
     deriving (Eq, Show, Generic, Typeable)
 
 instance Serialize n => Serialize (RList n)
-instance Se n => Se (RList n)
+instance Value n => Value (RList n)
 
 data RSet n = RSet n
     deriving (Eq, Show, Generic, Typeable)
 
 instance Serialize n => Serialize (RSet n)
-instance Se n => Se (RSet n)
---
---
+instance Value n => Value (RSet n)
+
+data Status = Pong | Ok | Status ByteString
+    deriving (Generic, Typeable, Eq, Show)
+
+instance Serialize Status
+instance Value Status
+
 -- data Command where
---     Set
+--     Set :: Key -> a -> Command
+--     Del :: Key -> Command
+--     Incr :: Key -> Command

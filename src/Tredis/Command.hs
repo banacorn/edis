@@ -8,8 +8,6 @@ import Tredis.TypeChecking
 import Tredis.Type
 import Data.Typeable
 
-import Database.Redis (Status(..))
-
 --------------------------------------------------------------------------------
 --  Connection
 --------------------------------------------------------------------------------
@@ -21,7 +19,7 @@ ping = returnStatus ["PING"]
 --  String
 --------------------------------------------------------------------------------
 
-declare :: (Se a, Typeable a) => Key -> Tx a
+declare :: Value a => Key -> Tx a
 declare key = do
     let Right val = de "witchcraft" -- fake a value
     insertType key (typeToInsert val)
@@ -34,7 +32,7 @@ declare key = do
                         listTyCon = typeRepTyCon listTypeRep
                         setTyCon = typeRepTyCon setTypeRep
 
-set :: (Se a, Typeable a) => Key -> a -> Tx Status
+set :: Value a => Key -> a -> Tx Status
 set key val = compareType key (returnStatus ["SET", key, en val]) (Type (typeOf val))
 
 incr :: Key -> Tx Int
@@ -43,7 +41,7 @@ incr key = compareType key (returnInt ["INCR", key]) (Type intTypeRep)
 decr :: Key -> Tx Int
 decr key = compareType key (returnInt ["DECR", key]) (Type intTypeRep)
 
-get :: (Se a, Typeable a) => Key -> Tx (Maybe a)
+get :: Value a => Key -> Tx (Maybe a)
 get key = compareCmdType key (returnMaybe ["GET", key]) (Type . carrier . deferred)
 
 del :: Key -> Tx Status
@@ -55,33 +53,33 @@ del key = do
 --  List
 --------------------------------------------------------------------------------
 
-lpush :: (Se a, Typeable a) => Key -> a -> Tx Int
+lpush :: Value a => Key -> a -> Tx Int
 lpush key val = compareType key (returnInt ["LPUSH", key, en val]) (ListType  (typeOf val))
 
-lpop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
+lpop :: Value a => Key -> Tx (Maybe a)
 lpop key = compareCmdType key (returnMaybe ["LPOP", key]) (ListType  . carrier . deferred)
 
 llen :: Key -> Tx Int
 llen key = compareType key (returnInt ["LLEN", key]) ListOfAnything
 
-lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx [a]
+lrange :: Value a => Key -> Integer -> Integer -> Tx [a]
 lrange key m n = compareCmdType key (returnList  ["LRANGE", key, en m, en n]) (ListType  . carrier . deferred)
 
-lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Maybe a)
+lindex :: Value a => Key -> Integer -> Tx (Maybe a)
 lindex key n = compareCmdType key (returnMaybe ["LINDEX", key, en n]) (ListType  . carrier . deferred)
 
 --------------------------------------------------------------------------------
 --  Set
 --------------------------------------------------------------------------------
 
-sadd :: (Se a, Typeable a) => Key -> a -> Tx Status
+sadd :: Value a => Key -> a -> Tx Status
 sadd key val = compareType key (returnStatus ["SADD", key, en val]) (SetType  (typeOf val))
 
 scard :: Key -> Tx Int
 scard key = compareType key (returnInt ["SCARD", key]) SetOfAnything
 
-smembers :: (Se a, Typeable a) => Key -> Tx [a]
+smembers :: Value a => Key -> Tx [a]
 smembers key = compareCmdType key (returnList ["SMEMBERS", key]) (SetType  . carrier . deferred)
 
-spop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
+spop :: Value a => Key -> Tx (Maybe a)
 spop key = compareCmdType key (returnMaybe ["SPOP", key]) (SetType  . carrier . deferred)
