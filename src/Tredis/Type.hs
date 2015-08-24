@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric, DeriveDataTypeable, GADTs, RankNTypes #-}
 
 module Tredis.Type where
 
@@ -56,36 +56,40 @@ data TxState = TxState
     }
 
 data Type = Type TypeRep
-          | List' TypeRep
+          | ListType  TypeRep
           | ListOfAnything
-          | Set' TypeRep
+          | SetType  TypeRep
           | SetOfAnything
 
 instance Show Type where
     show (Type n) = show n
-    show (List' n) = "List " ++ show n
+    show (ListType  n) = "List " ++ show n
     show ListOfAnything = "List a"
-    show (Set' n) = "Set " ++ show n
+    show (SetType  n) = "Set " ++ show n
     show SetOfAnything = "Set a"
 
 instance Eq Type where
     Type s == Type t = s == t
     Type s == _ = False
-    List' s == List' t = s == t
-    List' s == ListOfAnything = True
-    List' s == _ = False
-    Set' s == Set' t = s == t
-    Set' s == SetOfAnything = True
-    Set' s == _ = False
+    ListType  s == ListType  t = s == t
+    ListType  s == ListOfAnything = True
+    ListType  s == _ = False
+    SetType  s == SetType  t = s == t
+    SetType  s == SetOfAnything = True
+    SetType  s == _ = False
 
-data List n = List n
+data RList n = RList n
     deriving (Eq, Show, Generic, Typeable)
 
-instance Serialize n => Serialize (List n)
-instance Se n => Se (List n)
+instance Serialize n => Serialize (RList n)
+instance Se n => Se (RList n)
 
-data Set n = Set n
+data RSet n = RSet n
     deriving (Eq, Show, Generic, Typeable)
 
-instance Serialize n => Serialize (Set n)
-instance Se n => Se (Set n)
+instance Serialize n => Serialize (RSet n)
+instance Se n => Se (RSet n)
+--
+--
+-- data Command where
+--     Set

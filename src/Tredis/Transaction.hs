@@ -160,7 +160,3 @@ runTx conn f = runRedis conn $ do
     if null errors
         then Right <$> execTx f         -- if none, then execute
         else Left  <$> return (reverse errors)    -- else return the errors
-
--- re-export Redis shit
-connect = Redis.connect
-defaultConnectInfo = Redis.defaultConnectInfo

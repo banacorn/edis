@@ -36,10 +36,10 @@ intTypeRep :: TypeRep
 intTypeRep = typeRep (Proxy :: Proxy Int)
 
 listTypeRep :: TypeRep
-listTypeRep = typeRep (Proxy :: Proxy List)
+listTypeRep = typeRep (Proxy :: Proxy RList)
 
 setTypeRep :: TypeRep
-setTypeRep = typeRep (Proxy :: Proxy Set)
+setTypeRep = typeRep (Proxy :: Proxy RSet)
 
 carrier :: TypeRep -> TypeRep
 carrier = head . typeRepArgs
@@ -47,5 +47,5 @@ carrier = head . typeRepArgs
 deferred :: Typeable a => Deferred a -> TypeRep
 deferred = carrier . typeOf
 
-toList' :: Typeable n => List n -> Type
-toList' (List n) = List' (typeOf n)
+toListType  :: Typeable n => RList n -> Type
+toListType  (RList n) = ListType  (typeOf n)

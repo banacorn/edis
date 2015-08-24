@@ -27,8 +27,8 @@ declare key = do
     insertType key (typeToInsert val)
     return $ Deferred $ \_ -> Right val
     where   typeToInsert val
-                | tyCon == listTyCon = List' $ head tyArgs
-                | tyCon == setTyCon = Set' $ head tyArgs
+                | tyCon == listTyCon = ListType  $ head tyArgs
+                | tyCon == setTyCon = SetType  $ head tyArgs
                 | otherwise = Type $ typeOf val
                 where   (tyCon, tyArgs) = splitTyConApp (typeOf val)
                         listTyCon = typeRepTyCon listTypeRep
@@ -56,32 +56,32 @@ del key = do
 --------------------------------------------------------------------------------
 
 lpush :: (Se a, Typeable a) => Key -> a -> Tx Int
-lpush key val = compareType key (returnInt ["LPUSH", key, en val]) (List' (typeOf val))
+lpush key val = compareType key (returnInt ["LPUSH", key, en val]) (ListType  (typeOf val))
 
 lpop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
-lpop key = compareCmdType key (returnMaybe ["LPOP", key]) (List' . carrier . deferred)
+lpop key = compareCmdType key (returnMaybe ["LPOP", key]) (ListType  . carrier . deferred)
 
 llen :: Key -> Tx Int
 llen key = compareType key (returnInt ["LLEN", key]) ListOfAnything
 
 lrange :: (Se a, Typeable a) => Key -> Integer -> Integer -> Tx [a]
-lrange key m n = compareCmdType key (returnList  ["LRANGE", key, en m, en n]) (List' . carrier . deferred)
+lrange key m n = compareCmdType key (returnList  ["LRANGE", key, en m, en n]) (ListType  . carrier . deferred)
 
 lindex :: (Se a, Typeable a) => Key -> Integer -> Tx (Maybe a)
-lindex key n = compareCmdType key (returnMaybe ["LINDEX", key, en n]) (List' . carrier . deferred)
+lindex key n = compareCmdType key (returnMaybe ["LINDEX", key, en n]) (ListType  . carrier . deferred)
 
 --------------------------------------------------------------------------------
 --  Set
 --------------------------------------------------------------------------------
 
 sadd :: (Se a, Typeable a) => Key -> a -> Tx Status
-sadd key val = compareType key (returnStatus ["SADD", key, en val]) (Set' (typeOf val))
+sadd key val = compareType key (returnStatus ["SADD", key, en val]) (SetType  (typeOf val))
 
 scard :: Key -> Tx Int
 scard key = compareType key (returnInt ["SCARD", key]) SetOfAnything
 
 smembers :: (Se a, Typeable a) => Key -> Tx [a]
-smembers key = compareCmdType key (returnList ["SMEMBERS", key]) (Set' . carrier . deferred)
+smembers key = compareCmdType key (returnList ["SMEMBERS", key]) (SetType  . carrier . deferred)
 
 spop :: (Se a, Typeable a) => Key -> Tx (Maybe a)
-spop key = compareCmdType key (returnMaybe ["SPOP", key]) (Set' . carrier . deferred)
+spop key = compareCmdType key (returnMaybe ["SPOP", key]) (SetType  . carrier . deferred)

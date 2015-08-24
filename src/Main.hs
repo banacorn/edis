@@ -1,13 +1,8 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, DefaultSignatures, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
-import Tredis.Transaction
-import Tredis.Command
-import Tredis.Type
-
-import Data.Serialize (Serialize)
-import Control.Applicative
+import Tredis
 
 main :: IO ()
 main = do
