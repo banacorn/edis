@@ -1,11 +1,5 @@
-{-# LANGUAGE TypeFamilies, TypeOperators, DeriveDataTypeable #-}
-
 module Tredis.Serialize where
 
-import qualified Database.Redis as Redis
-import           Database.Redis (Status(..))
-
-import GHC.Generics
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as L
 import Data.ByteString.Char8 (pack, unpack)
@@ -13,7 +7,6 @@ import Data.Typeable
 import Data.Serialize
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
-import Data.Monoid (All, Any, Dual, Sum, Product, First, Last)
 import Data.Ratio (Ratio)
 
 

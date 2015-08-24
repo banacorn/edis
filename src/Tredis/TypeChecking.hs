@@ -3,7 +3,6 @@ module Tredis.TypeChecking where
 import           Tredis.Transaction
 import           Tredis.Type
 import           Data.Typeable
-import           GHC.Generics
 
 --------------------------------------------------------------------------------
 --  type checking stuffs
@@ -22,14 +21,17 @@ checkType key got = do
 compareResult :: Typeable a => Key -> Tx a -> (TypeRep -> Type) -> Tx a
 compareResult key cmd f = do
     returnValue <- cmd
-    typeError <- checkType key (f $ deferred returnValue)
-    case typeError of
+    typeErr <- checkType key (f $ carrier $ typeOf returnValue)
+    case typeErr of
         Just er -> assertError er
         Nothing -> return returnValue
 
 compareType :: Typeable a => Key -> Tx a -> Type -> Tx a
 compareType key cmd t = compareResult key cmd (const t)
 
+--------------------------------------------------------------------------------
+--  TypeRep operators
+--------------------------------------------------------------------------------
 
 intTypeRep :: TypeRep
 intTypeRep = typeRep (Proxy :: Proxy Int)
@@ -42,9 +44,3 @@ setTypeRep = typeRep (Proxy :: Proxy Set)
 
 carrier :: TypeRep -> TypeRep
 carrier = head . typeRepArgs
-
-deferred :: Typeable a => Deferred a -> TypeRep
-deferred = carrier . typeOf
-
-toListType  :: Typeable n => List n -> Type
-toListType  (List n) = ListType  (typeOf n)

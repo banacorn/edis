@@ -9,16 +9,64 @@ import           Control.Applicative (Applicative(..))
 import           Control.Monad.State (State)
 import           Data.Map (Map)
 import           Data.ByteString (ByteString)
-import           Data.ByteString.Char8 (pack, unpack)
+import           Data.ByteString.Char8 (unpack)
 import           Data.Serialize (Serialize)
 import           Data.Typeable
-import qualified Database.Redis as Redis
-import           Database.Redis (Redis, Reply(..))
+import           Database.Redis (Reply(..))
 
 
-type Tx' = State TxState
-type Tx a = Tx' (Deferred a)
-type Key = ByteString
+--------------------------------------------------------------------------------
+--  Type annotation for users
+--------------------------------------------------------------------------------
+
+data List n = List n
+    deriving (Eq, Show, Generic, Typeable)
+
+instance Serialize n => Serialize (List n)
+instance Value n => Value (List n)
+
+data Set n = Set n
+    deriving (Eq, Show, Generic, Typeable)
+
+instance Serialize n => Serialize (Set n)
+instance Value n => Value (Set n)
+
+--------------------------------------------------------------------------------
+--  Type
+--------------------------------------------------------------------------------
+
+data Type = Type TypeRep
+          | ListType  TypeRep
+          | ListOfAnything
+          | SetType  TypeRep
+          | SetOfAnything
+
+instance Show Type where
+    show (Type n) = show n
+    show (ListType  n) = "List " ++ show n
+    show ListOfAnything = "List a"
+    show (SetType  n) = "Set " ++ show n
+    show SetOfAnything = "Set a"
+
+instance Eq Type where
+    Type s      == Type t           = s == t
+    Type _      == _                = False
+    ListType s  == ListType t       = s == t
+    ListType _  == ListOfAnything   = True
+    ListType _  == _                = False
+    SetType s   == SetType t        = s == t
+    SetType _   == SetOfAnything    = True
+    SetType _   == _                = False
+    ListOfAnything == ListType _    = True
+    ListOfAnything == ListOfAnything = True
+    ListOfAnything == _             = False
+    SetOfAnything == SetType _      = True
+    SetOfAnything == SetOfAnything  = True
+    SetOfAnything == _              = False
+
+--------------------------------------------------------------------------------
+--  TypeError
+--------------------------------------------------------------------------------
 
 data TypeError
     = Undeclared Key
@@ -26,7 +74,11 @@ data TypeError
 
 instance Show TypeError where
     show (Undeclared key) = "Undeclared: " ++ unpack key
-    show (TypeMismatch key exp got) = "TypeMismatch: expect '" ++ show exp ++ "', got '" ++ show got ++ "'"
+    show (TypeMismatch _ expect got) = "TypeMismatch: expect '" ++ show expect ++ "', got '" ++ show got ++ "'"
+
+--------------------------------------------------------------------------------
+--  Deferred
+--------------------------------------------------------------------------------
 
 data Deferred a = Deferred ([Reply] -> Either Reply a)
     deriving Typeable
@@ -48,6 +100,14 @@ instance Monad Deferred where
                                 let Deferred f' = f x'
                                 f' rs
 
+--------------------------------------------------------------------------------
+--  Tx
+--------------------------------------------------------------------------------
+
+type Tx' = State TxState
+type Tx a = Tx' (Deferred a)
+type Key = ByteString
+
 data TxState = TxState
     {   commands :: [Command]
     ,   typeTable :: Map Key Type
@@ -55,46 +115,19 @@ data TxState = TxState
     ,   counter :: Int
     }
 
-data Type = Type TypeRep
-          | ListType  TypeRep
-          | ListOfAnything
-          | SetType  TypeRep
-          | SetOfAnything
-
-instance Show Type where
-    show (Type n) = show n
-    show (ListType  n) = "List " ++ show n
-    show ListOfAnything = "List a"
-    show (SetType  n) = "Set " ++ show n
-    show SetOfAnything = "Set a"
-
-instance Eq Type where
-    Type s == Type t = s == t
-    Type s == _ = False
-    ListType  s == ListType  t = s == t
-    ListType  s == ListOfAnything = True
-    ListType  s == _ = False
-    SetType  s == SetType  t = s == t
-    SetType  s == SetOfAnything = True
-    SetType  s == _ = False
-
-data List n = List n
-    deriving (Eq, Show, Generic, Typeable)
-
-instance Serialize n => Serialize (List n)
-instance Value n => Value (List n)
-
-data Set n = Set n
-    deriving (Eq, Show, Generic, Typeable)
-
-instance Serialize n => Serialize (Set n)
-instance Value n => Value (Set n)
+--------------------------------------------------------------------------------
+--  Status
+--------------------------------------------------------------------------------
 
 data Status = Pong | Ok | Status ByteString
     deriving (Generic, Typeable, Eq, Show)
 
 instance Serialize Status
 instance Value Status
+
+--------------------------------------------------------------------------------
+--  Command
+--------------------------------------------------------------------------------
 
 data Command where
     PING :: Command

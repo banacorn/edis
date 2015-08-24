@@ -4,8 +4,9 @@ module Tredis (
     ,   checkTx
     ,   runTx
     ,   Tx
-    ,   List
-    ,   Set
+    ,   List(..)
+    ,   Set(..)
+    ,   Status(..)
     ,   Redis.connect
     ,   Redis.defaultConnectInfo
     ) where

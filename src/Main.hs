@@ -4,6 +4,7 @@ module Main where
 
 import Tredis
 
+program :: Tx Status
 program = do
 
     ping

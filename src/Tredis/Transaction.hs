@@ -5,11 +5,9 @@ module Tredis.Transaction where
 import           Tredis.Serialize
 import           Tredis.Type
 
-import           Data.Typeable
 import           Control.Applicative ((<$>))
 import           Control.Monad.State
-import           Data.ByteString (ByteString)
-import           Data.ByteString.Char8 (pack, unpack)
+import           Data.ByteString.Char8 (pack)
 import           Data.Serialize (Serialize)
 import qualified Data.Map as Map
 import qualified Database.Redis as Redis
@@ -25,51 +23,45 @@ defaultTxState = TxState [] Map.empty [] 0
 -- commands
 insertCommand :: Command -> Tx' Int
 insertCommand cmd = do
-    state <- get
-    let cmds = commands state
-    let count = counter state
-    put $ state { commands = cmd : cmds
-                , counter  = succ count
-                }
+    states <- get
+    let cmds = commands states
+    let count = counter states
+    put $ states { commands = cmd : cmds
+                 , counter  = succ count
+                 }
     return count
 
 -- type
 removeType :: Key -> Tx' ()
 removeType key = do
-    state <- get
-    let table = typeTable state
-    put $ state { typeTable = Map.delete key table }
+    states <- get
+    table <- gets typeTable
+    put $ states { typeTable = Map.delete key table }
 
 lookupType :: Key -> Tx' (Maybe Type)
 lookupType key = do
-    state <- get
-    let table = typeTable state
+    table <- gets typeTable
     return $ Map.lookup key table
 
 insertType :: Key -> Type -> Tx' ()
 insertType key typ = do
-    state <- get
-    let table = typeTable state
-    put $ state { typeTable = Map.insert key typ table }
+    states <- get
+    table <- gets typeTable
+    put $ states { typeTable = Map.insert key typ table }
 
 -- type error
 assertError :: TypeError -> Tx' a
 assertError err = do
-    state <- get
-    let errors = typeError state
-    let count = counter state
-    put $ state { typeError = (count, err) : errors }
+    states <- get
+    let errors = typeError states
+    let count = counter states
+    put $ states { typeError = (count, err) : errors }
     return undefined
 
 
 --------------------------------------------------------------------------------
 --  send command
 --------------------------------------------------------------------------------
-
-toStatus :: Redis.Status -> Status
-toStatus Redis.Pong = Pong
-toStatus Redis.Ok = Ok
-toStatus (Redis.Status n) = Status n
 
 sendCommand :: (Value a) => (Reply -> Either Reply a) -> Command -> Tx a
 sendCommand decoder cmd = do
@@ -146,14 +138,14 @@ execTx :: Value a => Redis.Connection -> Tx a -> IO (Either Reply a)
 execTx conn f = runRedis conn $ do
 
     -- issue MULTI
-    multi
+    _ <- multi
 
     -- extract states
-    let (Deferred deferred, state) = runState f defaultTxState
-    let redisCommands = reverse $ commands state
+    let (Deferred deferred, states) = runState f defaultTxState
+    let redisCommands = reverse (commands states)
 
     -- run them all
-    sequence (map toRedisCommand redisCommands)
+    sequence_ (map toRedisCommand redisCommands)
 
     -- issue EXEC
     execResult <- exec
@@ -170,9 +162,7 @@ execTx conn f = runRedis conn $ do
         exec = either id id <$> sendRequest ["EXEC"]
 
 checkTx :: Value a => Tx a -> [(Int, TypeError)]
-checkTx f =
-    let state = execState f defaultTxState in
-    reverse $ typeError state
+checkTx f = reverse $ typeError (execState f defaultTxState)
 
 -- check & exec
 runTx :: (Serialize a, Value a) => Redis.Connection -> Tx a -> IO (Either [(Int, TypeError)] (Either Reply a))
