@@ -24,8 +24,6 @@ instance Value Integer where
     en = pack . show
     de = Right . read . unpack
 
-
-
 instance Value Bool
 instance Value Char
 instance Value Double
@@ -40,17 +38,10 @@ instance Value Word8
 instance Value Word16
 instance Value Word32
 instance Value Word64
--- instance Value All
--- instance Value Any
 instance Value ByteString
 instance Value L.ByteString
 instance Value a => Value [a]
 instance (Value a, Integral a) => Value (Ratio a)
--- instance Value a => Value (Dual a)
--- instance Value a => Value (Sum a)
--- instance Value a => Value (Product a)
--- instance Value a => Value (First a)
--- instance Value a => Value (Last a)
 instance Value a => Value (Maybe a)
 instance (Value a, Value b) => Value (Either a b)
 instance Value ()
@@ -60,6 +51,3 @@ instance (Value a, Value b, Value c, Value d) => Value (a, b, c, d)
 instance (Value a, Value b, Value c, Value d, Value e) => Value (a, b, c, d, e)
 instance (Value a, Value b, Value c, Value d, Value e, Value f) => Value (a, b, c, d, e, f)
 instance (Value a, Value b, Value c, Value d, Value e, Value f, Value g) => Value (a, b, c, d, e, f, g)
--- instance (Value a, Value b, Value c, Value d, Value e, Value f, Value g, Value h) => Value (a, b, c, d, e, f, g, h)
--- instance (Value a, Value b, Value c, Value d, Value e, Value f, Value g, Value h, Value i) => Value (a, b, c, d, e, f, g, h, i)
--- instance (Value a, Value b, Value c, Value d, Value e, Value f, Value g, Value h, Value i, Value j) => Value (a, b, c, d, e, f, g, h, i, j)

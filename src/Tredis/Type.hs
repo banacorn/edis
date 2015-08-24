@@ -130,8 +130,8 @@ instance Value Status
 --------------------------------------------------------------------------------
 
 data Command where
+    -- connection
     PING :: Command
-
     -- string
     SET :: Value a => Key -> a -> Command
     GET :: Key -> Command

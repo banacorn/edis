@@ -16,23 +16,33 @@ type family If (p :: Bool) (a :: k) (b :: k) :: k where
   If 'False a b = b
 
 type family Find (k :: a) (ls :: [(a,b)]) :: b
--- type instance Lookup k '[] = 'Nothing
+type instance Find k '[] = 'Nothing
 type instance Find k ('(a,b) ': xs) = If (a == k) b (Find k xs)
 
-data HAList :: [(Symbol,*)] -> * where
-  ANil  :: HAList '[]
-  ACons :: a -> HAList ts -> HAList ('(key,a) ': ts)
+
+-- a = HCons ("a", 0) HNil
+--
+-- b :: HList '[([Char], Integer), ([Char], Integer)]
+-- b = HCons ("b", 0) a
+--
+-- c :: Find "a" '[(Symbol, Int)]
+-- c = _
+
+
+-- data HAList :: [(Symbol,*)] -> * where
+--   ANil  :: HAList '[]
+--   ACons :: a -> HAList ts -> HAList ('(key,a) ': ts)
 
 {-
 what about
  ACons :: Proxy key -> a -> HAList ts -> HAList ('(key,a) ': ts)
 -}
 
-prox :: Proxy "here"
-prox = Proxy
-
-symb :: String
-symb = symbolVal prox
+-- prox :: Proxy "here"
+-- prox = Proxy
+--
+-- symb :: String
+-- symb = symbolVal prox
 
 {-
 find :: Proxy key -> HAList ts -> Find key ts

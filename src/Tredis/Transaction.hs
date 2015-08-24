@@ -8,7 +8,6 @@ import           Tredis.Type
 import           Control.Applicative ((<$>))
 import           Control.Monad.State
 import           Data.ByteString.Char8 (pack)
-import           Data.Serialize (Serialize)
 import qualified Data.Map as Map
 import qualified Database.Redis as Redis
 import           Database.Redis (Redis, runRedis, Reply(..), sendRequest)
@@ -166,7 +165,7 @@ checkTx :: Value a => Tx a -> [(Int, TypeError)]
 checkTx f = reverse $ typeError (execState f defaultTxState)
 
 -- check & exec
-runTx :: (Serialize a, Value a) => Redis.Connection -> Tx a -> IO (Either [(Int, TypeError)] (Either Reply a))
+runTx :: Value a => Redis.Connection -> Tx a -> IO (Either [(Int, TypeError)] (Either Reply a))
 runTx conn f = do
     -- see if there's any type error
     let errors = checkTx f
