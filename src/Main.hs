@@ -9,7 +9,7 @@ main = do
     conn <- connect defaultConnectInfo
     result <- runTx conn $ do
 
-        -- ping
+        ping
         -- declare "a" :: Tx Int
         -- incr "a"
 
@@ -20,18 +20,19 @@ main = do
         -- llen "list"
         -- lindex "list" 2 :: Tx (Maybe Int)
 
-        -- declare "n" :: Tx Int
-        -- set "n" (42 :: Int)
-        -- incr "n"
-        -- get "n" :: Tx' (Deferred (Maybe Int))
+        declare "string" :: Tx Int
+        set "string" (42 :: Int)
+        -- incr "string"
+        get "string" :: Tx (Maybe Int)
 
-        declare "set" :: Tx (Set Int)
-        sadd "set" (4 :: Int)
-        sadd "set" (1 :: Int)
-        sadd "set" (2:: Int)
-        scard "set"
-        smembers "set" :: Tx [Int]
-        spop "set" :: Tx (Maybe Int)
+        --
+        -- declare "set" :: Tx (Set Int)
+        -- sadd "set" (4 :: Int)
+        -- sadd "set" (1 :: Int)
+        -- sadd "set" (2:: Int)
+        -- scard "set"
+        -- smembers "set" :: Tx [Int]
+        -- spop "set" :: Tx (Maybe Int)
 
     case result of
         Left err -> print err

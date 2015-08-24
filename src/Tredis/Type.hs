@@ -49,7 +49,7 @@ instance Monad Deferred where
                                 f' rs
 
 data TxState = TxState
-    {   commands :: [Redis (Either Reply Redis.Status)]
+    {   commands :: [Command]
     ,   typeTable :: Map Key Type
     ,   typeError :: [(Int, TypeError)]
     ,   counter :: Int
@@ -78,17 +78,17 @@ instance Eq Type where
     SetType  s == SetOfAnything = True
     SetType  s == _ = False
 
-data RList n = RList n
+data List n = List n
     deriving (Eq, Show, Generic, Typeable)
 
-instance Serialize n => Serialize (RList n)
-instance Value n => Value (RList n)
+instance Serialize n => Serialize (List n)
+instance Value n => Value (List n)
 
-data RSet n = RSet n
+data Set n = Set n
     deriving (Eq, Show, Generic, Typeable)
 
-instance Serialize n => Serialize (RSet n)
-instance Value n => Value (RSet n)
+instance Serialize n => Serialize (Set n)
+instance Value n => Value (Set n)
 
 data Status = Pong | Ok | Status ByteString
     deriving (Generic, Typeable, Eq, Show)
@@ -96,7 +96,8 @@ data Status = Pong | Ok | Status ByteString
 instance Serialize Status
 instance Value Status
 
--- data Command where
---     Set :: Key -> a -> Command
---     Del :: Key -> Command
---     Incr :: Key -> Command
+data Command where
+    PING :: Command
+    SET :: Value a => Key -> a -> Command
+    GET :: Key -> Command
+    -- Incr :: Key -> Command

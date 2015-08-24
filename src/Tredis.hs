@@ -12,6 +12,3 @@ import qualified Database.Redis as Redis
 import Tredis.Command
 import Tredis.Transaction
 import Tredis.Type
-
-type List = RList
-type Set = RSet

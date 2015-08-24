@@ -23,12 +23,12 @@ defaultTxState :: TxState
 defaultTxState = TxState [] Map.empty [] 0
 
 -- commands
-insertCommand :: [ByteString] -> Tx' Int
+insertCommand :: Command -> Tx' Int
 insertCommand cmd = do
     state <- get
     let cmds = commands state
     let count = counter state
-    put $ state { commands = sendRequest cmd : cmds
+    put $ state { commands = cmd : cmds
                 , counter  = succ count
                 }
     return count
@@ -71,7 +71,7 @@ toStatus Redis.Pong = Pong
 toStatus Redis.Ok = Ok
 toStatus (Redis.Status n) = Status n
 
-sendCommand :: (Value a) => (Reply -> Either Reply a) -> [ByteString] -> Tx a
+sendCommand :: (Value a) => (Reply -> Either Reply a) -> Command -> Tx a
 sendCommand decoder cmd = do
     count <- insertCommand cmd
     return $ Deferred (decoder . select count)
@@ -106,17 +106,21 @@ decodeAsStatus (SingleLine "PONG") = Right Pong
 decodeAsStatus (SingleLine s) = Right (Status s)
 decodeAsStatus others = error $ "should be (SingleLine _), but got " ++ show others
 
-returnAnything :: Value a => [ByteString] -> Tx a
-returnAnything = sendCommand decodeAsAnything
-returnMaybe :: Value a => [ByteString] -> Tx (Maybe a)
+-- returnAnything :: Value a => [ByteString] -> Tx a
+-- returnAnything = sendCommand decodeAsAnything
+returnMaybe :: Value a => Command -> Tx (Maybe a)
 returnMaybe = sendCommand decodeAsMaybe
-returnInt :: [ByteString] -> Tx Int
-returnInt = sendCommand decodeAsInt
-returnList :: Value a => [ByteString] -> Tx [a]
-returnList = sendCommand decodeAsList
-returnStatus :: [ByteString] -> Tx Status
+-- returnInt :: [ByteString] -> Tx Int
+-- returnInt = sendCommand decodeAsInt
+-- returnList :: Value a => [ByteString] -> Tx [a]
+-- returnList = sendCommand decodeAsList
+returnStatus :: Command -> Tx Status
 returnStatus = sendCommand decodeAsStatus
 
+toRedisCommand :: Command -> Redis (Either Reply Redis.Status)
+toRedisCommand PING = sendRequest ["PING"]
+toRedisCommand (SET key val) = sendRequest ["SET", key, en val]
+toRedisCommand (GET key) = sendRequest ["GET", key]
 
 --------------------------------------------------------------------------------
 --  Tx'
@@ -134,7 +138,7 @@ execTx f = do
     let redisCommands = reverse $ commands state
 
     -- run them all
-    sequence redisCommands
+    sequence (map toRedisCommand redisCommands)
 
     -- issue EXEC
     execResult <- exec
