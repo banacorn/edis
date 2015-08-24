@@ -1,5 +1,7 @@
 module Tredis (
         module Tredis.Command
+    ,   execTx
+    ,   checkTx
     ,   runTx
     ,   Tx
     ,   List

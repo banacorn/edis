@@ -127,8 +127,8 @@ toRedisCommand (GET key) = sendRequest ["GET", key]
 --------------------------------------------------------------------------------
 
 -- execute
-execTx :: Value a => Tx a -> Redis (Either Reply a)
-execTx f = do
+execTx :: Value a => Redis.Connection -> Tx a -> IO (Either Reply a)
+execTx conn f = runRedis conn $ do
 
     -- issue MULTI
     multi
@@ -159,12 +159,11 @@ checkTx f =
     let state = execState f defaultTxState in
     reverse $ typeError state
 
+-- check & exec
 runTx :: (Serialize a, Value a) => Redis.Connection -> Tx a -> IO (Either [(Int, TypeError)] (Either Reply a))
-runTx conn f = runRedis conn $ do
-    let state = execState f defaultTxState
-
+runTx conn f = do
     -- see if there's any type error
-    let errors = typeError state
+    let errors = checkTx f
     if null errors
-        then Right <$> execTx f         -- if none, then execute
-        else Left  <$> return (reverse errors)    -- else return the errors
+        then Right <$> execTx conn f    -- if none, then execute
+        else Left  <$> return errors    -- else return the errors
