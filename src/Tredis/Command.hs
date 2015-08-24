@@ -42,7 +42,7 @@ decr :: Key -> Tx Int
 decr key = compareType key (returnInt (DECR key)) (Type intTypeRep)
 
 get :: Value a => Key -> Tx (Maybe a)
-get key = compareCmdType key (returnMaybe (GET key)) (Type . carrier . deferred)
+get key = compareResult key (returnMaybe (GET key)) (Type . carrier)
 
 del :: Key -> Tx Status
 del key = do
@@ -54,32 +54,32 @@ del key = do
 --------------------------------------------------------------------------------
 
 lpush :: Value a => Key -> a -> Tx Int
-lpush key val = compareType key (returnInt (LPUSH key val)) (ListType  (typeOf val))
+lpush key val = compareType key (returnInt (LPUSH key val)) (ListType (typeOf val))
 
 lpop :: Value a => Key -> Tx (Maybe a)
-lpop key = compareCmdType key (returnMaybe (LPOP key)) (ListType  . carrier . deferred)
+lpop key = compareResult key (returnMaybe (LPOP key)) (ListType . carrier)
 
 llen :: Key -> Tx Int
 llen key = compareType key (returnInt (LLEN key)) ListOfAnything
 
 lrange :: Value a => Key -> Integer -> Integer -> Tx [a]
-lrange key m n = compareCmdType key (returnList  (LRANGE key m n)) (ListType  . carrier . deferred)
+lrange key m n = compareResult key (returnList  (LRANGE key m n)) (ListType . carrier)
 
 lindex :: Value a => Key -> Integer -> Tx (Maybe a)
-lindex key n = compareCmdType key (returnMaybe (LINDEX key n)) (ListType  . carrier . deferred)
+lindex key n = compareResult key (returnMaybe (LINDEX key n)) (ListType . carrier)
 
 --------------------------------------------------------------------------------
 --  Set
 --------------------------------------------------------------------------------
 
 sadd :: Value a => Key -> a -> Tx Status
-sadd key val = compareType key (returnStatus (SADD key val)) (SetType  (typeOf val))
+sadd key val = compareType key (returnStatus (SADD key val)) (SetType (typeOf val))
 
 scard :: Key -> Tx Int
 scard key = compareType key (returnInt (SCARD key)) SetOfAnything
 
 smembers :: Value a => Key -> Tx [a]
-smembers key = compareCmdType key (returnList (SMEMBERS key)) (SetType  . carrier . deferred)
+smembers key = compareResult key (returnList (SMEMBERS key)) (SetType . carrier)
 
 spop :: Value a => Key -> Tx (Maybe a)
-spop key = compareCmdType key (returnMaybe (SPOP key)) (SetType  . carrier . deferred)
+spop key = compareResult key (returnMaybe (SPOP key)) (SetType . carrier)

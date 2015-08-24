@@ -19,17 +19,16 @@ checkType key got = do
             then return $ Nothing
             else return $ Just (TypeMismatch key expected got)
 
-compareCmdType :: Key -> Tx' a -> (a -> Type) -> Tx' a
-compareCmdType key cmd f = do
+compareResult :: Typeable a => Key -> Tx a -> (TypeRep -> Type) -> Tx a
+compareResult key cmd f = do
     returnValue <- cmd
-    typeError <- checkType key (f returnValue)
+    typeError <- checkType key (f $ deferred returnValue)
     case typeError of
         Just er -> assertError er
         Nothing -> return returnValue
 
-compareType :: Key -> Tx' a -> Type -> Tx' a
-compareType key cmd typ = compareCmdType key cmd (const typ)
-
+compareType :: Typeable a => Key -> Tx a -> Type -> Tx a
+compareType key cmd t = compareResult key cmd (const t)
 
 
 intTypeRep :: TypeRep
