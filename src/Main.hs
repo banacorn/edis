@@ -15,7 +15,6 @@ program = do
     -- incr "string"
     -- get "string" :: Tx (Maybe Int)
 
-
     -- declare "list" :: Tx (List Int)
     -- lpush "list" (3 :: Int)
     -- lpop "list" :: Tx (Maybe Int)

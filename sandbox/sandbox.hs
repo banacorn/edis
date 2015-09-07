@@ -3,16 +3,49 @@ module Sandbox where
 
 import GHC.TypeLits
 import Data.Proxy
+import Data.Typeable
 import Data.Maybe (isJust)
 
+-- list
+data HList :: [*] -> * where
+  HNil  :: HList '[]
+  HCons :: a -> HList (ts) -> HList (a ': ts)
 
--- Symbol :: *
--- KnownSymbol :: Symbol -> Constraint
+-- association list
+data HAList :: [(*,*)] -> * where
+  ANil  :: HAList '[]
+  ACons :: a -> HAList ts -> HAList ('(key,a) ': ts)
+
+-- Type Representation
+intType :: TypeRep
+intType  = typeRep (Proxy :: Proxy Int)
+charType :: TypeRep
+charType = typeRep (Proxy :: Proxy Char)
+
+-- How to actually construct them from the term level?
+foo :: Proxy '("foo", intType)
+foo = Proxy
+
+bar :: Proxy '("bar", charType)
+bar = Proxy
+
+someAList :: HList '[Proxy '("foo", intType), Proxy '("bar", charType)]
+someAList = HCons foo (HCons bar HNil)
 
 
 
-data SList a = SNil | SCons a (SList a)
 
+
+
+insert :: a -> HList ts -> HList (a ': ts)
+insert = HCons
+
+
+
+-- data Tuple :: (*,*) -> * where
+--   Tuple :: a -> b -> Tuple '(a,b)
+
+-- data SList a = SNil | SCons a (SList a)
 
 
 -- data HList :: SList Symbol -> * where
@@ -22,12 +55,6 @@ data SList a = SNil | SCons a (SList a)
 -- data HList :: [Symbol] -> * where
 --   HNil  :: HList '[]
 --   HCons :: a -> HList (ts) -> HList (a ': ts)
-
-data HList :: [*] -> * where
-  HNil  :: HList '[]
-  HCons :: a -> HList (ts) -> HList (a ': ts)
-
-
 
 -- a :: KnownSymbol a => HList '[a]
 -- a = HCons _ HNil
@@ -44,13 +71,8 @@ data HList :: [*] -> * where
 -- append (Cons a as) bs = Cons a (append as bs)
 
 
-foo :: Proxy "foo"
-foo = Proxy
-bar :: Proxy "bar"
-bar = Proxy
-
-a :: HList '[Proxy "foo", Proxy "bar"]
-a = HCons foo (HCons bar HNil)
+-- Symbol :: *
+-- KnownSymbol :: Symbol -> Constraint
 
 same :: (KnownSymbol a, KnownSymbol b) => Proxy a -> Proxy b -> Bool
 same a b = isJust (sameSymbol a b)
