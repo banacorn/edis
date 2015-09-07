@@ -8,26 +8,26 @@ import           Data.Typeable
 --  type checking stuffs
 --------------------------------------------------------------------------------
 
-checkType :: Key -> Type -> Tx' (Maybe TypeError)
-checkType key got = do
-    result <- lookupType key
+checkType :: KeySig -> Type -> Tx' (Maybe TypeError)
+checkType keysig got = do
+    result <- lookupType keysig
     case result of
         Nothing -> do
-            return $ Just (Undeclared key)
+            return $ Just (Undeclared keysig)
         Just expected -> if expected == got
             then return $ Nothing
-            else return $ Just (TypeMismatch key expected got)
+            else return $ Just (TypeMismatch keysig expected got)
 
-compareResult :: Typeable a => Key -> Tx a -> (TypeRep -> Type) -> Tx a
-compareResult key cmd f = do
+compareResult :: Typeable a => KeySig -> Tx a -> (TypeRep -> Type) -> Tx a
+compareResult keysig cmd f = do
     returnValue <- cmd
-    typeErr <- checkType key (f $ carrier $ typeOf returnValue)
+    typeErr <- checkType keysig (f $ carrier $ typeOf returnValue)
     case typeErr of
         Just er -> assertError er
         Nothing -> return returnValue
 
-compareType :: Typeable a => Key -> Tx a -> Type -> Tx a
-compareType key cmd t = compareResult key cmd (const t)
+compareType :: Typeable a => KeySig -> Tx a -> Type -> Tx a
+compareType keysig cmd t = compareResult keysig cmd (const t)
 
 --------------------------------------------------------------------------------
 --  TypeRep operators
@@ -41,6 +41,9 @@ listTypeRep = typeRep (Proxy :: Proxy List)
 
 setTypeRep :: TypeRep
 setTypeRep = typeRep (Proxy :: Proxy Set)
+
+hashTypeRep :: TypeRep
+hashTypeRep = typeRep (Proxy :: Proxy Hash)
 
 carrier :: TypeRep -> TypeRep
 carrier = head . typeRepArgs

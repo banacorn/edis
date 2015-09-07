@@ -31,22 +31,22 @@ insertCommand cmd = do
     return count
 
 -- type
-removeType :: Key -> Tx' ()
-removeType key = do
+removeType :: KeySig -> Tx' ()
+removeType keysig = do
     states <- get
     table <- gets typeTable
-    put $ states { typeTable = Map.delete key table }
+    put $ states { typeTable = Map.delete keysig table }
 
-lookupType :: Key -> Tx' (Maybe Type)
-lookupType key = do
+lookupType :: KeySig -> Tx' (Maybe Type)
+lookupType keysig = do
     table <- gets typeTable
-    return $ Map.lookup key table
+    return $ Map.lookup keysig table
 
-insertType :: Key -> Type -> Tx' ()
-insertType key typ = do
+insertType :: KeySig -> Type -> Tx' ()
+insertType keysig typ = do
     states <- get
     table <- gets typeTable
-    put $ states { typeTable = Map.insert key typ table }
+    put $ states { typeTable = Map.insert keysig typ table }
 
 -- type error
 assertError :: TypeError -> Tx' a
@@ -97,6 +97,11 @@ decodeAsStatus (SingleLine "PONG") = Right Pong
 decodeAsStatus (SingleLine s) = Right (Status s)
 decodeAsStatus others = error $ "should be (SingleLine _), but got " ++ show others
 
+decodeAsBool :: Reply -> Either Reply Bool
+decodeAsBool (Integer 1) = Right True
+decodeAsBool (Integer 0) = Right False
+decodeAsBool others = error $ "should be (Integer _), but got " ++ show others
+
 returnAnything :: Value a => Command -> Tx a
 returnAnything = sendCommand decodeAsAnything
 returnMaybe :: Value a => Command -> Tx (Maybe a)
@@ -107,6 +112,8 @@ returnList :: Value a => Command -> Tx [a]
 returnList = sendCommand decodeAsList
 returnStatus :: Command -> Tx Status
 returnStatus = sendCommand decodeAsStatus
+returnBool :: Command -> Tx Bool
+returnBool = sendCommand decodeAsBool
 
 toRedisCommand :: Command -> Redis (Either Reply Redis.Status)
 toRedisCommand PING = sendRequest ["PING"]
@@ -128,6 +135,8 @@ toRedisCommand (SREM key) = sendRequest ["SREM", key]
 toRedisCommand (SCARD key) = sendRequest ["SCARD", key]
 toRedisCommand (SMEMBERS key) = sendRequest ["SMEMBERS", key]
 toRedisCommand (SPOP key) = sendRequest ["SPOP", key]
+-- set
+toRedisCommand (HSET key field val) = sendRequest ["HSET", key, field, en val]
 -- toRedisCommand others = error $ "unrecognized command: " ++ show others
 --------------------------------------------------------------------------------
 --  Tx'

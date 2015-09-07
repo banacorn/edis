@@ -31,6 +31,22 @@ data Set n = Set n
 instance Serialize n => Serialize (Set n)
 instance Value n => Value (Set n)
 
+data Hash = Hash
+    deriving (Eq, Show, Generic, Typeable)
+
+instance Serialize Hash
+instance Value Hash
+
+--------------------------------------------------------------------------------
+--  Key & Field
+--------------------------------------------------------------------------------
+
+data KeySig = Sing Key | Pair Key Field
+    deriving (Eq, Ord)
+
+instance Show KeySig where
+    show (Sing key) = unpack key
+    show (Pair key field) = unpack key ++ " " ++ unpack field
 --------------------------------------------------------------------------------
 --  Type
 --------------------------------------------------------------------------------
@@ -40,6 +56,7 @@ data Type = Type TypeRep
           | ListOfAnything
           | SetType  TypeRep
           | SetOfAnything
+          | HashType
 
 instance Show Type where
     show (Type n) = show n
@@ -47,6 +64,7 @@ instance Show Type where
     show ListOfAnything = "List a"
     show (SetType  n) = "Set " ++ show n
     show SetOfAnything = "Set a"
+    show HashType = "Hash"
 
 instance Eq Type where
     Type s      == Type t           = s == t
@@ -57,6 +75,8 @@ instance Eq Type where
     SetType s   == SetType t        = s == t
     SetType _   == SetOfAnything    = True
     SetType _   == _                = False
+    HashType    == HashType         = True
+    HashType    == _                = False
     ListOfAnything == ListType _    = True
     ListOfAnything == ListOfAnything = True
     ListOfAnything == _             = False
@@ -69,11 +89,11 @@ instance Eq Type where
 --------------------------------------------------------------------------------
 
 data TypeError
-    = Undeclared Key
-    | TypeMismatch Key Type Type
+    = Undeclared KeySig
+    | TypeMismatch KeySig Type Type
 
 instance Show TypeError where
-    show (Undeclared key) = "Undeclared: " ++ unpack key
+    show (Undeclared key) = "Undeclared: " ++ show key
     show (TypeMismatch _ expect got) = "TypeMismatch: expect '" ++ show expect ++ "', got '" ++ show got ++ "'"
 
 --------------------------------------------------------------------------------
@@ -107,10 +127,11 @@ instance Monad Deferred where
 type Tx' = State TxState
 type Tx a = Tx' (Deferred a)
 type Key = ByteString
+type Field = ByteString
 
 data TxState = TxState
     {   commands :: [Command]
-    ,   typeTable :: Map Key Type
+    ,   typeTable :: Map KeySig Type
     ,   typeError :: [(Int, TypeError)]
     ,   counter :: Int
     }
@@ -153,6 +174,9 @@ data Command where
     SMEMBERS :: Key -> Command
     SPOP :: Key -> Command
 
+    -- hash
+    HSET :: Value a => Key -> Field -> a -> Command
+
 instance Show Command where
     show PING           = "PING"
     -- string
@@ -173,3 +197,5 @@ instance Show Command where
     show (SCARD k)      = "SCARD " ++ unpack k
     show (SMEMBERS k)   = "SMEMBERS " ++ unpack k
     show (SPOP k)       = "SCARD " ++ unpack k
+    -- hash
+    show (HSET k f v)      = "HSET " ++ unpack k ++ " " ++ unpack f ++ " " ++ unpack (en v)

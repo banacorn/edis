@@ -22,31 +22,49 @@ ping = returnStatus PING
 declare :: Value a => Key -> Tx a
 declare key = do
     let Right val = de "witchcraft" -- fake a value
-    insertType key (typeToInsert val)
+    insertType (Sing key) (typeToInsert val)
     return $ Deferred $ \_ -> Right val
     where   typeToInsert val
-                | tyCon == listTyCon = ListType  $ head tyArgs
-                | tyCon == setTyCon = SetType  $ head tyArgs
+                | tyCon == listTyCon = ListType $ head tyArgs
+                | tyCon == setTyCon = SetType $ head tyArgs
+                | tyCon == hashTyCon = HashType
                 | otherwise = Type $ typeOf val
                 where   (tyCon, tyArgs) = splitTyConApp (typeOf val)
                         listTyCon = typeRepTyCon listTypeRep
                         setTyCon = typeRepTyCon setTypeRep
+                        hashTyCon = typeRepTyCon hashTypeRep
+
+declareField :: Value a => Key -> Field -> Tx a
+declareField key field = do
+    let Right val = de "witchcraft" -- fake a value
+    insertType (Pair key field) (typeToInsert val)
+    return $ Deferred $ \_ -> Right val
+    where   typeToInsert val
+                | tyCon == listTyCon = ListType $ head tyArgs
+                | tyCon == setTyCon = SetType $ head tyArgs
+                | tyCon == hashTyCon = HashType
+                | otherwise = Type $ typeOf val
+                where   (tyCon, tyArgs) = splitTyConApp (typeOf val)
+                        listTyCon = typeRepTyCon listTypeRep
+                        setTyCon = typeRepTyCon setTypeRep
+                        hashTyCon = typeRepTyCon hashTypeRep
+
 
 set :: Value a => Key -> a -> Tx Status
-set key val = compareType key (returnStatus (SET key val)) (Type (typeOf val))
+set key val = compareType (Sing key) (returnStatus (SET key val)) (Type (typeOf val))
 
 incr :: Key -> Tx Int
-incr key = compareType key (returnInt (INCR key)) (Type intTypeRep)
+incr key = compareType (Sing key) (returnInt (INCR key)) (Type intTypeRep)
 
 decr :: Key -> Tx Int
-decr key = compareType key (returnInt (DECR key)) (Type intTypeRep)
+decr key = compareType (Sing key) (returnInt (DECR key)) (Type intTypeRep)
 
 get :: Value a => Key -> Tx (Maybe a)
-get key = compareResult key (returnMaybe (GET key)) (Type . carrier)
+get key = compareResult (Sing key) (returnMaybe (GET key)) (Type . carrier)
 
 del :: Key -> Tx Status
 del key = do
-    removeType key
+    removeType (Sing key)
     returnStatus (DEL key)
 
 --------------------------------------------------------------------------------
@@ -54,35 +72,42 @@ del key = do
 --------------------------------------------------------------------------------
 
 lpush :: Value a => Key -> a -> Tx Int
-lpush key val = compareType key (returnInt (LPUSH key val)) (ListType (typeOf val))
+lpush key val = compareType (Sing key) (returnInt (LPUSH key val)) (ListType (typeOf val))
 
 lpop :: Value a => Key -> Tx (Maybe a)
-lpop key = compareResult key (returnMaybe (LPOP key)) (ListType . carrier)
+lpop key = compareResult (Sing key) (returnMaybe (LPOP key)) (ListType . carrier)
 
 llen :: Key -> Tx Int
-llen key = compareType key (returnInt (LLEN key)) ListOfAnything
+llen key = compareType (Sing key) (returnInt (LLEN key)) ListOfAnything
 
 lrange :: Value a => Key -> Integer -> Integer -> Tx [a]
-lrange key m n = compareResult key (returnList  (LRANGE key m n)) (ListType . carrier)
+lrange key m n = compareResult (Sing key) (returnList  (LRANGE key m n)) (ListType . carrier)
 
 lindex :: Value a => Key -> Integer -> Tx (Maybe a)
-lindex key n = compareResult key (returnMaybe (LINDEX key n)) (ListType . carrier)
+lindex key n = compareResult (Sing key) (returnMaybe (LINDEX key n)) (ListType . carrier)
 
 --------------------------------------------------------------------------------
 --  Set
 --------------------------------------------------------------------------------
 
 sadd :: Value a => Key -> a -> Tx Status
-sadd key val = compareType key (returnStatus (SADD key val)) (SetType (typeOf val))
+sadd key val = compareType (Sing key) (returnStatus (SADD key val)) (SetType (typeOf val))
 
 srem :: Key -> Tx Int
-srem key = compareType key (returnInt (SREM key)) SetOfAnything
+srem key = compareType (Sing key) (returnInt (SREM key)) SetOfAnything
 
 scard :: Key -> Tx Int
-scard key = compareType key (returnInt (SCARD key)) SetOfAnything
+scard key = compareType (Sing key) (returnInt (SCARD key)) SetOfAnything
 
 smembers :: Value a => Key -> Tx [a]
-smembers key = compareResult key (returnList (SMEMBERS key)) (SetType . carrier)
+smembers key = compareResult (Sing key) (returnList (SMEMBERS key)) (SetType . carrier)
 
 spop :: Value a => Key -> Tx (Maybe a)
-spop key = compareResult key (returnMaybe (SPOP key)) (SetType . carrier)
+spop key = compareResult (Sing key) (returnMaybe (SPOP key)) (SetType . carrier)
+
+--------------------------------------------------------------------------------
+--  Hash
+--------------------------------------------------------------------------------
+
+hset :: Value a => Key -> Field -> a -> Tx Bool
+hset key field val = compareType (Pair key field) (returnBool (HSET key field val)) (Type (typeOf val))

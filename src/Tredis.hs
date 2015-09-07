@@ -6,6 +6,7 @@ module Tredis (
     ,   Tx
     ,   List(..)
     ,   Set(..)
+    ,   Hash(..)
     ,   Status(..)
     ,   Redis.connect
     ,   Redis.defaultConnectInfo

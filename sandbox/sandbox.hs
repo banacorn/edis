@@ -41,6 +41,10 @@ insert :: a -> HList ts -> HList (a ': ts)
 insert = HCons
 
 
+-- e :: (KnownSymbol n) => Proxy n -> r
+-- e p = p
+-- e p = case someSymbolVal "thing" of { SomeSymbol (proxy) -> foo proxy }
+
 
 -- data Tuple :: (*,*) -> * where
 --   Tuple :: a -> b -> Tuple '(a,b)

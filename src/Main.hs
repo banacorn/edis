@@ -4,7 +4,7 @@ module Main where
 
 import Tredis
 
-program :: Tx Status
+-- program :: Tx Status
 program = do
 
     ping
@@ -30,6 +30,12 @@ program = do
     -- scard "set"
     -- smembers "set" :: Tx [Int]
     -- spop "set" :: Tx (Maybe Int)
+
+    declare "hash" :: Tx Hash
+    declareField "hash" "f0" :: Tx Bool
+    declareField "hash" "f1" :: Tx [Bool]
+    hset "hash" "f0" True
+    hset "hash" "f1" [True]
 
 
 main :: IO ()
