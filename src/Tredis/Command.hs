@@ -111,3 +111,9 @@ spop key = compareResult (Sing key) (returnMaybe (SPOP key)) (SetType . carrier)
 
 hset :: Value a => Key -> Field -> a -> Tx Bool
 hset key field val = compareType (Pair key field) (returnBool (HSET key field val)) (Type (typeOf val))
+
+hdel :: Key -> Field -> Tx Int
+hdel key field = compareType (Pair key field) (returnInt (HDEL key field)) Anything
+
+hlen :: Key -> Tx Int
+hlen key = compareType (Sing key) (returnInt (HLEN key)) HashType

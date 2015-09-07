@@ -34,9 +34,10 @@ program = do
     declare "hash" :: Tx Hash
     declareField "hash" "f0" :: Tx Bool
     declareField "hash" "f1" :: Tx [Bool]
+    hdel "hash" "f0"
     hset "hash" "f0" True
     hset "hash" "f1" [True]
-
+    hlen "hash"
 
 main :: IO ()
 main = do

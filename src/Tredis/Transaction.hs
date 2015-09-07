@@ -137,6 +137,9 @@ toRedisCommand (SMEMBERS key) = sendRequest ["SMEMBERS", key]
 toRedisCommand (SPOP key) = sendRequest ["SPOP", key]
 -- set
 toRedisCommand (HSET key field val) = sendRequest ["HSET", key, field, en val]
+toRedisCommand (HDEL key field) = sendRequest $ ["HDEL", key, field]
+toRedisCommand (HKEYS key) = sendRequest ["HKEYS", key]
+toRedisCommand (HLEN key) = sendRequest ["HLEN", key]
 -- toRedisCommand others = error $ "unrecognized command: " ++ show others
 --------------------------------------------------------------------------------
 --  Tx'

@@ -8,6 +8,7 @@ import           GHC.Generics
 import           Control.Applicative (Applicative(..))
 import           Control.Monad.State (State)
 import           Data.Map (Map)
+import           Data.List (intercalate)
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (unpack)
 import           Data.Serialize (Serialize)
@@ -51,7 +52,8 @@ instance Show KeySig where
 --  Type
 --------------------------------------------------------------------------------
 
-data Type = Type TypeRep
+data Type = Anything
+          | Type TypeRep
           | ListType  TypeRep
           | ListOfAnything
           | SetType  TypeRep
@@ -59,6 +61,7 @@ data Type = Type TypeRep
           | HashType
 
 instance Show Type where
+    show Anything = "Anything"
     show (Type n) = show n
     show (ListType  n) = "List " ++ show n
     show ListOfAnything = "List a"
@@ -67,6 +70,8 @@ instance Show Type where
     show HashType = "Hash"
 
 instance Eq Type where
+    Anything    == _                = True
+    _           == Anything         = True
     Type s      == Type t           = s == t
     Type _      == _                = False
     ListType s  == ListType t       = s == t
@@ -83,6 +88,7 @@ instance Eq Type where
     SetOfAnything == SetType _      = True
     SetOfAnything == SetOfAnything  = True
     SetOfAnything == _              = False
+
 
 --------------------------------------------------------------------------------
 --  TypeError
@@ -176,6 +182,9 @@ data Command where
 
     -- hash
     HSET :: Value a => Key -> Field -> a -> Command
+    HDEL :: Key -> Field -> Command
+    HKEYS :: Key -> Command
+    HLEN :: Key -> Command
 
 instance Show Command where
     show PING           = "PING"
@@ -193,9 +202,12 @@ instance Show Command where
     show (LINDEX k n)   = "LINDEX " ++ unpack k ++ " " ++ unpack (en n)
     -- set
     show (SADD k v)     = "SADD " ++ unpack k ++ " " ++ unpack (en v)
-    show (SREM k)      = "SREM " ++ unpack k
+    show (SREM k)       = "SREM " ++ unpack k
     show (SCARD k)      = "SCARD " ++ unpack k
     show (SMEMBERS k)   = "SMEMBERS " ++ unpack k
     show (SPOP k)       = "SCARD " ++ unpack k
     -- hash
-    show (HSET k f v)      = "HSET " ++ unpack k ++ " " ++ unpack f ++ " " ++ unpack (en v)
+    show (HSET k f v)   = "HSET " ++ unpack k ++ " " ++ unpack f ++ " " ++ unpack (en v)
+    show (HDEL k f)     = "HDEL " ++ unpack k ++ " " ++ unpack f
+    show (HKEYS k)      = "HKEYS " ++ unpack k
+    show (HLEN k)       = "HLEN " ++ unpack k
