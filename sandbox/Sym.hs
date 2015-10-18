@@ -10,10 +10,13 @@ import Data.Proxy
 import GHC.Exts (Constraint)
 
 --------------------------------------------------------------------------------
---  kind-indexed singleton
+--  kind-indexed singletons
 --------------------------------------------------------------------------------
 
 data family Sing (a :: k)
+
+type Nat = (Sing :: N -> *)
+type Sym = (Proxy :: Symbol -> *)
 
 --------------------------------------------------------------------------------
 --  Natural Number
@@ -123,6 +126,20 @@ egFind0 :: (Find "A" '["A", "B"]) ~ Just "A" => ()
 egFind0 = ()
 
 --------------------------------------------------------------------------------
+--  Maybe
+--------------------------------------------------------------------------------
+
+data instance Sing (a :: Maybe k) where
+    SNothing :: Sing Nothing
+    SJust :: Sing k -> Sing (Just k)
+
+type family FromJust (x :: Maybe k) :: k where
+    FromJust (Just k) = k
+
+egFromJust0 :: (FromJust (Just Char) ~ Char) => ()
+egFromJust0 = ()
+
+--------------------------------------------------------------------------------
 --  Dictionary
 --------------------------------------------------------------------------------
 
@@ -139,15 +156,30 @@ egDict0 = DNil
 egDict1 :: Dict '[ '("A", Char), '("B", Int) ]
 egDict1 = DCons Proxy 'a' (DCons Proxy 0 DNil)
 
-data instance Sing (a :: Maybe k) where
-    SNothing :: Sing Nothing
-    SJust :: Sing k -> Sing (Just k)
+--------------------------------------------------------------------------------
+--  Dictionary Membership
+--------------------------------------------------------------------------------
 
-type family FromJust (x :: Maybe k) :: k where
-    FromJust (Just k) = k
+type family Member (s :: Symbol) (xs :: [ (Symbol, *) ]) :: Bool where
+    Member s '[]             = False
+    Member s ('(s, x) ': xs) = True
+    Member s ('(t, x) ': xs) = Member s xs
 
-egFromJust0 :: (FromJust (Just Char) ~ Char) => ()
-egFromJust0 = ()
+egMember0 :: (Member "C" '[ '("A", Char), '("B", Int) ] ~ False) => ()
+egMember0 = ()
+
+--------------------------------------------------------------------------------
+--  Dictionary Insertion/Update
+--------------------------------------------------------------------------------
+
+type family Insert (s :: Symbol) (x :: *) (xs :: [ (Symbol, *) ]) :: [ (Symbol, *) ] where
+    Insert s x '[]             = '[ '(s, x) ]
+    Insert s x ('(s, y) ': xs) = ('(s, x) ': xs)
+    Insert s x ('(t, y) ': xs) = '(t, y) ': (Insert s x xs)
+
+--------------------------------------------------------------------------------
+--  Dictionary Lookup
+--------------------------------------------------------------------------------
 
 type family Lookup (s :: Symbol) (xs :: [ (Symbol, *) ]) :: Maybe * where
     Lookup s '[]             = Nothing
@@ -156,6 +188,9 @@ type family Lookup (s :: Symbol) (xs :: [ (Symbol, *) ]) :: Maybe * where
 
 egLookup0 :: (Lookup "A" '[ '("A", Char), '("B", Int) ] ~ Just Char) => ()
 egLookup0 = ()
+--
+-- egLookup1 :: (Lookup "A" '[ '("A", Char), '("B", Int) ] ~ Just Char) => ()
+-- egLookup1 = ()
 
 class SLookup s xs where
     lookup :: Proxy s -> Dict xs -> FromJust (Lookup s xs)
@@ -167,28 +202,3 @@ instance (  (Lookup s ('(t, x) ': xs)) ~ (Lookup s xs)
          ,                               SLookup s xs)
          => SLookup s ('(t, x) ': xs) where
     lookup s (DCons _ _ xs) = lookup s xs
-
-
--- find :: (KnownSymbol s, KnownSymbol x) => Proxy s -> SymList (x ': xs) -> String
--- find s (SymCons x xs) = case sameSymbol s x of
---     Just refl -> symbolVal s
---     Nothing   -> find s xs
--- find s (SymCons x xs) = case sameSymbol s x of
---     Just refl -> symbolVal s
---     Nothing   -> find s xs
-
-
--- find :: (s ~ Find s (x ': xs)) => Proxy s -> SymList (x ': xs) -> Proxy (Find s (x ': xs))
--- find s (SymCons x xs) =  case sameSymbol s x of
---     Just refl -> s
---     Nothing   -> find s xs
-
-
-
-
--- term level function, DOESNT COMPILE!!!!
--- find :: Proxy s -> SymList xs -> Proxy (Find s xs)
--- find s SymNil         = error "empty symbol list"
--- find s (SymCons x xs) = case sameSymbol s x of
---     Just refl -> s
---     Nothing   -> undefined
