@@ -4,6 +4,7 @@ module Sandbox2 where
 
 import GHC.TypeLits
 import Data.Proxy
+import Prelude hiding (lookup)
 
 --------------------------------------------------------------------------------
 --  Heterogeneous list
@@ -49,21 +50,21 @@ sn3 = SSuc (SSuc (SSuc SZero))
 --  Nth (type level & term level)
 --------------------------------------------------------------------------------
 
-type family Nth (n :: N) (xs :: [k]) :: k where
-    Nth 'Zero          (x ': xs)   = x
-    Nth ('Suc n)       (x ': xs)   = Nth n xs
+type family Get (n :: N) (xs :: [k]) :: k where
+    Get 'Zero          (x ': xs)   = x
+    Get ('Suc n)       (x ': xs)   = Get n xs
 
--- nth : forall xs . (n : Nat) -> (HList xs) -> xs !! n
-nth :: SNat n -> HList xs -> Nth n xs
-nth SZero    (HCons x xs) = x
-nth (SSuc n) (HCons x xs) = nth n xs
+-- get : forall xs . (n : Nat) -> (HList xs) -> xs !! n
+get :: SNat n -> HList xs -> Get n xs
+get SZero    (HCons x xs) = x
+get (SSuc n) (HCons x xs) = get n xs
 
 -- example
-nth0 :: Nth 'Zero '[Int, Bool]
-nth0 = 2
+get0 :: Get 'Zero '[Int, Bool]
+get0 = 2
 
-nth1 :: Char
-nth1 = nth sn3 h0 -- => 'a'
+get1 :: Char
+get1 = get sn3 h0 -- => 'a'
 
 
 --------------------------------------------------------------------------------
@@ -77,17 +78,14 @@ data SymList :: [ Symbol ] -> * where
     SymNil :: SymList '[]
     SymCons :: Proxy s -> SymList ts -> SymList (s ': ts)
 
--- data Proxy a = Proxy
-
-
 -- example
-symList0 :: SymList '[]
-symList0 = SymNil
+type SymListTypeEg = '[ "haha", "hehe", "lol" ]
 
-symList1 :: SymList '[ "haha" ,      "hehe",        "lol" ]
-symList1 = SymCons     Proxy (SymCons Proxy (SymCons Proxy SymNil))
+symListTermEg0 :: SymList '[]
+symListTermEg0 = SymNil
 
-
+symListTermEg1 :: SymList SymListTypeEg
+symListTermEg1 = SymCons Proxy (SymCons Proxy (SymCons Proxy SymNil))
 
 --------------------------------------------------------------------------------
 --  Find on Symbol List (type level & term level)
@@ -96,20 +94,29 @@ symList1 = SymCons     Proxy (SymCons Proxy (SymCons Proxy SymNil))
 type family SFind (s :: Symbol) (xs :: [Symbol]) :: Symbol where
     SFind s      (s ': xs)   = s                -- found!
     SFind s      (x ': xs)   = SFind s xs       -- keep looking
-    -- SFind s      '[]         = "not found"      -- ???
 
-sfind :: Proxy s -> SymList xs -> Proxy (SFind s xs)
-sfind s xs = Proxy
+type family Member (s :: Symbol) (xs :: [Symbol]) :: * where
+    Member s (s ': xs) = s
 
--- example
--- sfind0 :: Proxy "hehe"
-sfind0 :: Proxy (SFind "hehe" '[ "haha" , "hehe", "lol" ])
-sfind0 = Proxy -- lame
-
--- symbolVal :: Proxy s -> String
-
-sfind1 :: String
-sfind1 = symbolVal (sfind (Proxy :: Proxy "hehe") symList1)
+--
+-- sfind :: Proxy s -> SymList xs -> Proxy (SFind s xs)
+-- sfind s SymNil         = error "empty symbol list"
+-- sfind s (SymCons x xs) = case sameSymbol s x of
+--     Just refl -> s
+--     Nothing   -> sfind s xs
+--
+-- sfind :: Proxy s -> SymList xs -> Proxy (SFind s xs)
+-- sfind s xs = Proxy
+--
+-- -- example
+-- -- sfind0 :: Proxy "hehe"
+-- sfind0 :: Proxy (SFind "hehe" '[ "haha" , "hehe", "lol" ])
+-- sfind0 = Proxy -- lame
+--
+-- -- symbolVal :: Proxy s -> String
+--
+-- sfind1 :: String
+-- sfind1 = symbolVal (sfind (Proxy :: Proxy "hehe") symList1)
 -- sfind1 => "haha"
 
 --------------------------------------------------------------------------------
@@ -124,8 +131,10 @@ data Dict :: [ (Symbol, *) ] -> * where
              -> Dict ('(s, x) ': ts) -- new dict
 
 -- example
-dict0 :: Dict '[ '("hahahahah", Char), '("int", Int) ]
-dict0 = DictCons (Proxy :: Proxy "hahahahah") 'a' (DictCons (Proxy :: Proxy "int") 3 DictNil)
+type ListExample = '[ '("Char", Char), '("Int", Int) ]
+
+dict0 :: Dict ListExample
+dict0 = DictCons (Proxy :: Proxy "Char") 'a' (DictCons (Proxy :: Proxy "Int") 3 DictNil)
 
 -- instance Show (Dict '[]) where
 --     show DictNil = "[]"
@@ -141,14 +150,30 @@ type family Lookup (s :: Symbol) (xs :: [(Symbol, *)]) :: * where
     Lookup s ('(s, x) ': xs) = x              -- found!
     Lookup s ('(z, x) ': xs) = Lookup s xs    -- keep searching
 
--- class Findable (s :: Symbol) (xs :: [(Symbol, *)])  where
---     find :: Proxy s -> Dict xs -> Find s xs
+-- typeLookup0 :: Lookup "Char" ListExample
+-- typeLookup0 = 'c' -- any term of type Char
+
+-- type family LookupDict (s :: Symbol) (xs :: Dict [(Symbol, *)]) :: * where
+--     LookupDict s ('(s, x) ': xs) = x              -- found!
+    -- LookupDict s ('(z, x) ': xs) = Lookup s xs    -- keep searching
 --
--- instance Findable s ('(s, x) ': xs) where
---     find s (DictCons s' x xs) = x
+-- lookup ::  Dict ('(s, x) ': xs) -> Proxy s -> Lookup s xs
+-- lookup DictNil           = error "not found"
+-- lookup (DictCons s x xs) = x
+--
+-- class L (s :: Symbol) (xs :: [(Symbol, *)])  where
+--     lookup :: Proxy s -> Dict xs -> Lookup s xs
+--
+-- instance L s ('(s, x) ': xs) where
+--     lookup s (DictCons s' x xs) = x
+
+
+
+-- termLookup0 ::
+-- termLookup0 = lookup (Proxy :: Proxy "char") dict0
 --
 -- instance (Findable s xs) => Findable s ('(z, x) ': xs) where
---     find s (DictCons s' x xs) = find s xs
+    -- find s (DictCons s' x xs) = find s xs
 --
 -- -- find s DictNil            = undefined
 -- find s (DictCons s' x xs) = undefined
