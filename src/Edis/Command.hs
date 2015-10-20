@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Tredis.Command where
+module Edis.Command where
 
-import Tredis.Transaction
-import Tredis.Serialize
-import Tredis.TypeChecking
-import Tredis.Type
+import Edis.Transaction
+import Edis.Serialize
+import Edis.TypeChecking
+import Edis.Type
 import Data.Typeable
 
 --------------------------------------------------------------------------------

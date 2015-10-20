@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric, DeriveDataTypeable, GADTs, RankNTypes #-}
 
-module Tredis.Type where
+module Edis.Type where
 
-import           Tredis.Serialize
+import           Edis.Serialize
 
 import           GHC.Generics
 import           Control.Applicative (Applicative(..))

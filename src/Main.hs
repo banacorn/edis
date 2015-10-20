@@ -2,7 +2,7 @@
 
 module Main where
 
-import Tredis
+import Edis
 
 -- program :: Tx Status
 program = do

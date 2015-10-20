@@ -1,7 +1,7 @@
-module Tredis.TypeChecking where
+module Edis.TypeChecking where
 
-import           Tredis.Transaction
-import           Tredis.Type
+import           Edis.Transaction
+import           Edis.Type
 import           Data.Typeable
 
 --------------------------------------------------------------------------------

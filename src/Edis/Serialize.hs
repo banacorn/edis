@@ -1,4 +1,4 @@
-module Tredis.Serialize where
+module Edis.Serialize where
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as L

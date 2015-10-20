@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes, DataKinds #-}
 
-module Tredis.Lifted where
+module Edis.Lifted where
 
 import Data.Proxy
 import GHC.TypeLits
 --
--- import Tredis.Transaction
-import Tredis.Serialize
--- import Tredis.TypeChecking
-import Tredis.Type
+-- import Edis.Transaction
+import Edis.Serialize
+-- import Edis.TypeChecking
+import Edis.Type
 -- import Data.Typeable
 
 -- data Lifted n a = forall n . KnownSymbol n => Lifted n (Tx a)

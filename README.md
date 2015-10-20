@@ -1,2 +1,2 @@
-# tredis
-typed redis
+# edis
+redis with types

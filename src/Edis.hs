@@ -1,5 +1,5 @@
-module Tredis (
-        module Tredis.Command
+module Edis (
+        module Edis.Command
     ,   execTx
     ,   checkTx
     ,   runTx
@@ -13,6 +13,6 @@ module Tredis (
     ) where
 
 import qualified Database.Redis as Redis
-import Tredis.Command
-import Tredis.Transaction
-import Tredis.Type
+import Edis.Command
+import Edis.Transaction
+import Edis.Type

@@ -9,6 +9,7 @@ cabal-dev
 .virtualenv
 .hpc
 .hsenv
+.stack-work/
 .cabal-sandbox/
 cabal.sandbox.config
 *.prof

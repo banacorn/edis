@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Tredis.Transaction where
+module Edis.Transaction where
 
-import           Tredis.Serialize
-import           Tredis.Type
+import           Edis.Serialize
+import           Edis.Type
 
 import           Control.Applicative ((<$>))
 import           Control.Monad.State
