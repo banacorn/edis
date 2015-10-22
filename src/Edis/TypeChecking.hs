@@ -40,7 +40,7 @@ listTypeRep :: TypeRep
 listTypeRep = typeRep (Proxy :: Proxy List)
 
 setTypeRep :: TypeRep
-setTypeRep = typeRep (Proxy :: Proxy Set)
+setTypeRep = typeRep (Proxy :: Proxy SetD)
 
 hashTypeRep :: TypeRep
 hashTypeRep = typeRep (Proxy :: Proxy Hash)

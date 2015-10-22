@@ -1,10 +1,12 @@
-{-# LANGUAGE DeriveGeneric, DeriveDataTypeable, GADTs, RankNTypes #-}
+{-# LANGUAGE DeriveGeneric, DeriveDataTypeable
+    , GADTs, RankNTypes
+    , DataKinds, PolyKinds #-}
 
 module Edis.Type where
 
 import           Edis.Serialize
 
-import           GHC.Generics
+import           GHC.Generics (Generic)
 import           Control.Applicative (Applicative(..))
 import           Control.Monad.State (State)
 import           Data.Map (Map)
@@ -13,7 +15,7 @@ import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (unpack)
 import           Data.Serialize (Serialize)
 import           Data.Typeable
-import           Database.Redis (Reply(..))
+import           Database.Redis (Reply(..), Redis)
 
 
 --------------------------------------------------------------------------------
@@ -26,11 +28,11 @@ data List n = List n
 instance Serialize n => Serialize (List n)
 instance Value n => Value (List n)
 
-data Set n = Set n
+data SetD n = SetD n
     deriving (Eq, Show, Generic, Typeable)
 
-instance Serialize n => Serialize (Set n)
-instance Value n => Value (Set n)
+instance Serialize n => Serialize (SetD n)
+instance Value n => Value (SetD n)
 
 data Hash = Hash
     deriving (Eq, Show, Generic, Typeable)
@@ -211,3 +213,25 @@ instance Show Command where
     show (HDEL k f)     = "HDEL " ++ unpack k ++ " " ++ unpack f
     show (HKEYS k)      = "HKEYS " ++ unpack k
     show (HLEN k)       = "HLEN " ++ unpack k
+
+--------------------------------------------------------------------------------
+--  P
+--------------------------------------------------------------------------------
+
+class PMonad m where
+    unit :: a -> m p p a
+    bind :: m p q a -> (a -> m q r b) -> m p r b
+
+data P p q a = P { unP :: Redis a }
+
+instance PMonad P where
+    unit = P . return
+    bind m f = P (unP m >>= unP . f )
+
+--------------------------------------------------------------------------------
+--  Kinds
+--------------------------------------------------------------------------------
+
+data ListK n = ListK n
+data SetK n = SetK n
+data HashK n = HashK n

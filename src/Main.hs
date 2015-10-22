@@ -1,56 +1,26 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, DataKinds #-}
 
 module Main where
 
+import Data.ByteString
+
 import Edis
 
--- program :: Tx Status
-program = do
-
-    ping
-
-
-    -- declare "string" :: Tx Int
-    -- set "string" (42 :: Int)
-    -- incr "string"
-    -- get "string" :: Tx (Maybe Int)
-
-    -- declare "list" :: Tx (List Int)
-    -- lpush "list" (3 :: Int)
-    -- lpop "list" :: Tx (Maybe Int)
-    -- lrange "list" 0 (-2) :: Tx [Int]
-    -- llen "list"
-    -- lindex "list" 2 :: Tx (Maybe Int)
-
-    --
-    -- declare "set" :: Tx (Set Int)
-    -- sadd "set" (4 :: Int)
-    -- sadd "set" (1 :: Int)
-    -- sadd "set" (2:: Int)
-    -- scard "set"
-    -- smembers "set" :: Tx [Int]
-    -- spop "set" :: Tx (Maybe Int)
-
-    declare "hash" :: Tx Hash
-    declareField "hash" "f0" :: Tx Bool
-    declareField "hash" "f1" :: Tx [Bool]
-    hdel "hash" "f0"
-    hset "hash" "f0" True
-    hset "hash" "f1" [True]
-    hlen "hash"
+program = start
+    `bind` \_ -> ping
+    -- `bind` \_ -> set      (Proxy :: Proxy "A") True
+    -- `bind` \_ -> set      (Proxy :: Proxy "A") 1
+    -- `bind` \_ -> incr     (Proxy :: Proxy "A")
+    -- `bind` \_ -> lpush    (Proxy :: Proxy "L") 'a'
+    -- `bind` \_ -> lpop     (Proxy :: Proxy "L")
+    -- `bind` \a -> sadd     (Proxy :: Proxy "S") 'z'
+    -- `bind` \_ -> srem     (Proxy :: Proxy "S") 'c'
+    `bind` \_ -> dec     (Proxy :: Proxy "L") (Proxy :: Proxy (ListK Char))
+    `bind` \_ -> lrange  (Proxy :: Proxy "L")  0 4
 
 main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
-
-    --
-    -- print (checkTx program)
-    -- execTx conn program >>= print
-
-    -- check + execute
-    result <- runTx conn program
-    case result of
-        Left err -> print err
-        Right ok -> print ok
+    runRedis conn (unP program) >>= print
 
     return ()
