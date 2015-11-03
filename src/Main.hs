@@ -2,14 +2,14 @@
 
 module Main where
 
-import Data.ByteString
+import Data.ByteString (ByteString)
 
 import Edis
 
 program = start
     `bind` \_ -> ping
     `bind` \_ -> set      (Proxy :: Proxy "A") True
-    `bind` \_ -> set      (Proxy :: Proxy "A") 1
+    `bind` \_ -> set      (Proxy :: Proxy "A") (1 :: Integer)
     `bind` \_ -> incr     (Proxy :: Proxy "A")
     `bind` \_ -> lpush    (Proxy :: Proxy "L") 'a'
     `bind` \_ -> lpop     (Proxy :: Proxy "L")
@@ -20,8 +20,8 @@ program = start
 program0 = start
     >>> ping
     >>> set     (Proxy :: Proxy "A") True
-    >>> set     (Proxy :: Proxy "A") 1
-    >>> incr    (Proxy :: Proxy "A")
+    >>> set     (Proxy :: Proxy "A") (1 :: Integer)
+    -- >>> incr    (Proxy :: Proxy "A")
     >>> lpush   (Proxy :: Proxy "L") 'a'
     >>> lpush   (Proxy :: Proxy "L") 'b'
     >>> decr    (Proxy :: Proxy "A")
@@ -32,12 +32,14 @@ main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
     result <- runRedis conn $ unP $ start
-        >>> set     (Proxy :: Proxy "A") 1
-        >>> incr    (Proxy :: Proxy "A")
-        >>> lpush   (Proxy :: Proxy "L") 'a'
-        >>> lpush   (Proxy :: Proxy "L") 'b'
-        >>> decr    (Proxy :: Proxy "A")
-        >>> lpop    (Proxy :: Proxy "L")
-        >>> llen    (Proxy :: Proxy "L")
+        -- >>> declare     (Proxy :: Proxy "A") (Proxy :: Proxy Integer)
+        >>> set         (Proxy :: Proxy "A") (3 :: Integer)
+        >>> set         (Proxy :: Proxy "B") True
+        >>> renamenx    (Proxy :: Proxy "A")  (Proxy :: Proxy "C")
+        >>> keys "*"
+        -- >>> incr     (Proxy :: Proxy "B")
+        -- >>> bitcount  "A"
+        -- >>> append  (Proxy :: Proxy "A") ("heeee" :: ByteString)
+        -- >>> get     (Proxy :: Proxy "A")
     print result
     return ()

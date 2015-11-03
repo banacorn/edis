@@ -33,6 +33,10 @@ instance {-# OVERLAPPING #-} Value String where
     enc = pack
     dec = Right . unpack
 
+instance Value ByteString where
+    enc = id
+    dec = Right
+
 instance Value Bool
 instance Value Char
 instance Value Double
@@ -47,7 +51,6 @@ instance Value Word8
 instance Value Word16
 instance Value Word32
 instance Value Word64
-instance Value ByteString
 instance Value L.ByteString
 instance Value a => Value [a]
 instance (Value a, Integral a) => Value (Ratio a)

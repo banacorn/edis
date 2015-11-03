@@ -1,12 +1,14 @@
 {-# LANGUAGE DeriveGeneric, DeriveDataTypeable
     , GADTs, RankNTypes
-    , DataKinds, PolyKinds #-}
+    , DataKinds, PolyKinds
+    , TypeFamilies #-}
 
 module Edis.Type where
 
 import           Edis.Serialize
 
 import           Database.Redis (Reply(..), Redis)
+import qualified Database.Redis as Redis
 
 --------------------------------------------------------------------------------
 --  P
@@ -29,9 +31,40 @@ infixl 1 >>>
 a >>> b = bind a (const b)
 
 --------------------------------------------------------------------------------
---  Kinds
+--  Redis Data Types (and Kinds)
 --------------------------------------------------------------------------------
 
+data NoneK = NoneK
+data StringK n = StringK n
+data HashK n = HashK n
 data ListK n = ListK n
 data SetK n = SetK n
-data HashK n = HashK n
+data ZSetK n = ZSetK n
+
+
+--------------------------------------------------------------------------------
+--  Redis Data Type
+--------------------------------------------------------------------------------
+
+type family RType (x :: *) :: Redis.RedisType where
+    RType (HashK n) = Redis.Hash
+    RType (ListK n) = Redis.List
+    RType (SetK n) = Redis.Set
+    RType (ZSetK n) = Redis.ZSet
+    RType x = Redis.String
+
+type family IsHash (x :: *) :: Bool where
+    IsHash (HashK n) = True
+    IsHash x         = False
+
+type family IsList (x :: *) :: Bool where
+    IsList (ListK n) = True
+    IsList x         = False
+
+type family IsSet (x :: *) :: Bool where
+    IsSet (SetK n) = True
+    IsSet x        = False
+
+type family IsZSet (x :: *) :: Bool where
+    IsZSet (ZSetK n) = True
+    IsZSet x         = False
