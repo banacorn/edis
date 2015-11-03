@@ -74,6 +74,11 @@ member0 = ()
 --  Dictionary Lookup
 --------------------------------------------------------------------------------
 
+-- wontWork :: Sym s -> Dict xs -> FromJust (Get s xs)
+-- wontWork s DNil = error "empty dict"
+-- wontWork s (DCons t x xs) | symbolVal s == symbolVal t = x
+--                           | symbolVal s /= symbolVal t = wontWork s xs
+
 type family Get (s :: Symbol) (xs :: [ (Symbol, *) ]) :: Maybe * where
     Get s '[]             = Nothing
     Get s ('(s, x) ': xs) = Just x

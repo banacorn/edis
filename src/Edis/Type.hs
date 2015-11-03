@@ -228,6 +228,12 @@ instance PMonad P where
     unit = P . return
     bind m f = P (unP m >>= unP . f )
 
+infixl 1 >>>
+
+-- Kleisli arrow
+(>>>) :: PMonad m => m p q a -> m q r b -> m p r b
+a >>> b = bind a (const b)
+
 --------------------------------------------------------------------------------
 --  Kinds
 --------------------------------------------------------------------------------

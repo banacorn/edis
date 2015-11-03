@@ -11,6 +11,7 @@ module Edis (
     ,   ListK(..)
     ,   SetK(..)
     ,   HashK(..)
+    ,   (>>>)
 
     -- ,   List(..)
     -- ,   SetD(..)

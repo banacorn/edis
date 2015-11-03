@@ -8,6 +8,7 @@ import Edis.Dict
 import Edis.Serialize
 import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (pack, unpack)
+import Data.Maybe (fromJust)
 
 import Database.Redis as Redis
 import           Control.Monad.State (liftIO)
@@ -131,3 +132,10 @@ decodeAsList (Left replyErr) = return $ Left replyErr
 decodeAsList (Right strs) = case mapM de strs of
     Left decodeErr -> return $ Left (Error $ pack decodeErr)
     Right vals -> return $ Right vals
+
+fromRight :: Either a b -> b
+fromRight (Left e) = error "Left val"
+fromRight (Right e) = e
+
+fromMaybeResult :: Either Reply (Maybe x) -> x
+fromMaybeResult = fromJust . fromRight

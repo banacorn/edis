@@ -9,9 +9,6 @@ import Data.Proxy
 
 --------------------------------------------------------------------------------
 --  kind-indexed singletons
---
---  Sing   
---
 --------------------------------------------------------------------------------
 data family Sing (a :: k)
 
@@ -23,7 +20,7 @@ data family Sing (a :: k)
 --  SZ           Sing 'Z            0
 --  SS SZ        Sing ('S 'Z)       1
 --  SS (SS SZ)   Sing ('S ('S 'Z))  2
---
+
 data N = Z | S N
 
 data instance Sing (a :: N) where
@@ -63,22 +60,22 @@ egSymList1 = SymCons (Proxy :: Proxy "A") (SymCons (Proxy :: Proxy "B") SymNil)
 --------------------------------------------------------------------------------
 
 -- type level function
-type family Get (n :: N) (xs :: [Symbol]) :: Symbol where
-    Get Z     (x ': xs) = x
-    Get (S n) (x ': xs) = Get n xs
+type family Nth (n :: N) (xs :: [Symbol]) :: Symbol where
+    Nth Z     (x ': xs) = x
+    Nth (S n) (x ': xs) = Nth n xs
 
--- example of Get
-egGet0 :: Get Z '["A", "B"] ~ "A" => ()
-egGet0 = ()
+-- example of Nth
+egNth0 :: Nth Z '["A", "B"] ~ "A" => ()
+egNth0 = ()
 
 -- term level function
-get :: Sing n -> SymList xs -> Proxy (Get n xs)
-get SZ     (SymCons x xs) = x
-get (SS n) (SymCons x xs) = get n xs
+nth :: Sing n -> SymList xs -> Proxy (Nth n xs)
+nth SZ     (SymCons x xs) = x
+nth (SS n) (SymCons x xs) = nth n xs
 
--- example of get
-egGetTerm0 :: get (Get Z '["A", "B"]) ~ Proxy "A" => ()
-egGetTerm0 = ()
+-- example of nth
+egNthTerm0 :: nth (Nth Z '["A", "B"]) ~ Proxy "A" => ()
+egNthTerm0 = ()
 
 --------------------------------------------------------------------------------
 --  Searching for a Symbol on a SymList
