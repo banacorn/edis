@@ -6,12 +6,11 @@ module Edis.Promoted where
 import Edis.Type
 import Edis.Dict
 import Edis.Serialize
-import Data.ByteString (ByteString)
+
 import Data.ByteString.Char8 (pack, unpack)
 import Data.Maybe (fromJust)
 
 import Database.Redis as Redis
-import           Control.Monad.State (liftIO)
 import Data.Proxy
 import GHC.TypeLits
 
@@ -30,9 +29,9 @@ ping = P Redis.ping
 --  Declaration
 --------------------------------------------------------------------------------
 
-dec :: (Member s xs ~ False, KnownSymbol s)
+declare :: (Member s xs ~ False, KnownSymbol s)
     => Proxy s -> Proxy x -> P xs (Set s x xs) ()
-dec s x = P $ return ()
+declare s x = P $ return ()
 
 --------------------------------------------------------------------------------
 --  String
@@ -40,23 +39,23 @@ dec s x = P $ return ()
 
 set :: (Value x, KnownSymbol s)
     => Proxy s -> x -> P xs (Set s x xs) (Either Reply Redis.Status)
-set key val = P $ Redis.set (en $ symbolVal key) (en val)
+set key val = P $ Redis.set (enc $ symbolVal key) (enc val)
 
 get :: (Value x, x ~ FromJust (Get s xs), Member s xs ~ True, KnownSymbol s)
     => Proxy s -> P xs xs (Either Reply (Maybe x))
-get key = P $ Redis.get (en $ symbolVal key) >>= decodeAsMaybe
+get key = P $ Redis.get (enc $ symbolVal key) >>= decodeAsMaybe
 
 del :: (Member s xs ~ True, KnownSymbol s)
     => Proxy s -> P xs (Del s xs) (Either Reply Integer)
-del key = P $ Redis.del [en $ symbolVal key]
+del key = P $ Redis.del [enc $ symbolVal key]
 
 incr :: (FromJust (Get s xs) ~ Integer, Member s xs ~ True, KnownSymbol s)
      => Proxy s -> P xs xs (Either Reply Integer)
-incr key = P $ Redis.incr (en $ symbolVal key)
+incr key = P $ Redis.incr (enc $ symbolVal key)
 
 decr :: (FromJust (Get s xs) ~ Integer, Member s xs ~ True, KnownSymbol s)
      => Proxy s -> P xs xs (Either Reply Integer)
-decr key = P $ Redis.decr (en $ symbolVal key)
+decr key = P $ Redis.decr (enc $ symbolVal key)
 
 --------------------------------------------------------------------------------
 --  List
@@ -71,23 +70,23 @@ type family LPUSH (s :: Symbol) (x :: *) (xs :: [ (Symbol, *) ]) :: Bool where
 
 lpush :: (LPUSH s x xs ~ True, Value x, KnownSymbol s)
       => Proxy s -> x -> P xs (Set s (ListK x) xs) (Either Reply Integer)
-lpush key val = P $ Redis.lpush (en $ symbolVal key) [en val]
+lpush key val = P $ Redis.lpush (enc $ symbolVal key) [enc val]
 
 lpop :: (FromJust (Get s xs) ~ ListK x, Value x, KnownSymbol s)
      => Proxy s -> P xs xs (Either Reply (Maybe x))
-lpop key = P $ Redis.lpop (en $ symbolVal key) >>= decodeAsMaybe
+lpop key = P $ Redis.lpop (enc $ symbolVal key) >>= decodeAsMaybe
 
 llen :: (FromJust (Get s xs) ~ ListK x, KnownSymbol s)
      => Proxy s -> P xs xs (Either Reply Integer)
-llen key = P $ Redis.llen (en $ symbolVal key)
+llen key = P $ Redis.llen (enc $ symbolVal key)
 
 lindex :: (FromJust (Get s xs) ~ ListK x, Value x, KnownSymbol s)
      => Proxy s -> Integer -> P xs xs (Either Reply (Maybe x))
-lindex key index = P $ Redis.lindex (en $ symbolVal key) index >>= decodeAsMaybe
+lindex key index = P $ Redis.lindex (enc $ symbolVal key) index >>= decodeAsMaybe
 
 lrange :: (FromJust (Get s xs) ~ ListK x, Value x, KnownSymbol s)
      => Proxy s -> Integer -> Integer -> P xs xs (Either Reply [x])
-lrange key from to = P $ Redis.lrange (en $ symbolVal key) from to >>= decodeAsList
+lrange key from to = P $ Redis.lrange (enc $ symbolVal key) from to >>= decodeAsList
 
 --------------------------------------------------------------------------------
 --  Set
@@ -102,19 +101,19 @@ type family SADD (s :: Symbol) (x :: *) (xs :: [ (Symbol, *) ]) :: Bool where
 
 sadd :: (SADD s x xs ~ True, Value x, KnownSymbol s)
      => Proxy s -> x -> P xs (Set s (SetK x) xs)  (Either Reply Integer)
-sadd key val = P $ Redis.sadd (en $ symbolVal key) [en val]
+sadd key val = P $ Redis.sadd (enc $ symbolVal key) [enc val]
 
 srem :: (Member s xs ~ True, FromJust (Get s xs) ~ SetK x, Value x, KnownSymbol s)
      => Proxy s -> x -> P xs xs (Either Reply Integer)
-srem key val = P $ Redis.srem (en $ symbolVal key) [en val]
+srem key val = P $ Redis.srem (enc $ symbolVal key) [enc val]
 
 scard :: (Member s xs ~ True, FromJust (Get s xs) ~ SetK x, Value x, KnownSymbol s)
       => Proxy s -> P xs xs  (Either Reply Integer)
-scard key = P $ Redis.scard (en $ symbolVal key)
+scard key = P $ Redis.scard (enc $ symbolVal key)
 
 smembers :: (Member s xs ~ True, FromJust (Get s xs) ~ SetK x, Value x, KnownSymbol s)
          => Proxy s -> P xs xs  (Either Reply [x])
-smembers key = P $ Redis.smembers (en $ symbolVal key) >>= decodeAsList
+smembers key = P $ Redis.smembers (enc $ symbolVal key) >>= decodeAsList
 
 --------------------------------------------------------------------------------
 --  Helper functions
@@ -123,14 +122,14 @@ smembers key = P $ Redis.smembers (en $ symbolVal key) >>= decodeAsList
 decodeAsMaybe :: (Value x) => Either Reply (Maybe ByteString) -> Redis (Either Reply (Maybe x))
 decodeAsMaybe (Left replyErr) = return $ Left replyErr
 decodeAsMaybe (Right Nothing) = return $ Right Nothing
-decodeAsMaybe (Right (Just str)) = case de str of
-        Left decodeErr -> return $ Left (Error $ pack decodeErr)
+decodeAsMaybe (Right (Just str)) = case dec str of
+        Left decodeErr -> return $ Left (Error $ enc decodeErr)
         Right val -> return $ Right (Just val)
 
 decodeAsList :: (Value x) => Either Reply [ByteString] -> Redis (Either Reply [x])
 decodeAsList (Left replyErr) = return $ Left replyErr
-decodeAsList (Right strs) = case mapM de strs of
-    Left decodeErr -> return $ Left (Error $ pack decodeErr)
+decodeAsList (Right strs) = case mapM dec strs of
+    Left decodeErr -> return $ Left (Error $ enc decodeErr)
     Right vals -> return $ Right vals
 
 fromRight :: Either a b -> b

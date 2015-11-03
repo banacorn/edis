@@ -1,9 +1,4 @@
 module Edis (
-    --     module Edis.Command
-    -- ,   Tx
-    -- ,   execTx
-    -- ,   checkTx
-    -- ,   runTx
         module Edis.Promoted
     ,   Proxy(..)
     ,   P(..)
@@ -13,10 +8,7 @@ module Edis (
     ,   HashK(..)
     ,   (>>>)
 
-    -- ,   List(..)
-    -- ,   SetD(..)
-    -- ,   Hash(..)
-    ,   Status(..)
+    -- ,   Status(..)
     ,   Redis.runRedis
     ,   Redis.connect
     ,   Redis.defaultConnectInfo
@@ -24,7 +16,5 @@ module Edis (
 
 import qualified Database.Redis as Redis
 import Data.Proxy
-import Edis.Command
-import Edis.Transaction
 import Edis.Type
 import Edis.Promoted

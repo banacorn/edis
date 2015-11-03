@@ -1,28 +1,37 @@
-module Edis.Serialize where
+{-# LANGUAGE FlexibleInstances #-}
+
+module Edis.Serialize (
+        Value(..)
+    ,   ByteString
+    ) where
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as L
 import Data.ByteString.Char8 (pack, unpack)
 import Data.Typeable
-import Data.Serialize
+import Data.Serialize (Serialize)
+import qualified Data.Serialize as Serialize
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Data.Ratio (Ratio)
 
-
 class (Serialize a, Typeable a) => Value a where
-    en :: a -> ByteString
-    en = encode
-    de :: ByteString -> Either String a
-    de = decode
+    enc :: a -> ByteString
+    enc = Serialize.encode
+    dec :: ByteString -> Either String a
+    dec = Serialize.decode
 
 instance Value Int where
-    en = pack . show
-    de = Right . read . unpack
+    enc = pack . show
+    dec = Right . read . unpack
 
 instance Value Integer where
-    en = pack . show
-    de = Right . read . unpack
+    enc = pack . show
+    dec = Right . read . unpack
+
+instance {-# OVERLAPPING #-} Value String where
+    enc = pack
+    dec = Right . unpack
 
 instance Value Bool
 instance Value Char

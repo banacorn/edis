@@ -28,16 +28,6 @@ program0 = start
     >>> lpop    (Proxy :: Proxy "L")
     >>> llen    (Proxy :: Proxy "L")
 
---
---
--- data P p q a = P (IO a)
---
--- unP :: P -> IO a
--- unP (P something) = something
-
-
--- data P p q a = P { unP :: IO a }
-
 main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
