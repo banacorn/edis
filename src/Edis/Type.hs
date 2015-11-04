@@ -1,11 +1,10 @@
 {-# LANGUAGE DeriveGeneric, DeriveDataTypeable
     , GADTs, RankNTypes
     , DataKinds, PolyKinds
-    , TypeFamilies #-}
+    , TypeFamilies, TypeOperators #-}
 
 module Edis.Type where
 
-import           Edis.Serialize
 import           GHC.TypeLits
 
 import           Database.Redis (Reply(..), Redis)
@@ -157,15 +156,6 @@ type family IsZSet (x :: *) :: Bool where
     IsZSet (ZSetK n) = True
     IsZSet x         = False
 
-
-type family HGet (xs :: *) (s :: Symbol) :: Maybe * where
-    HGet (HashK xs) s = Get xs s
---
--- type HGET xs k f = HGet (FromJust (Get xs k)) f
-
--- type family HSet (xs :: *) (s :: Symbol) (x :: *) :: * where
---     HSet (HashK xs) s x = HashK (Set xs s x)
-
 type family GetHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) :: Maybe * where
     GetHash '[]                    k f = Nothing
     GetHash ('(k, HashK hs) ': xs) k f = Get hs f
@@ -187,6 +177,3 @@ type family MemHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) :: Bool 
     MemHash ('(k, HashK hs) ': xs) k f = Member hs f
     MemHash ('(k, x       ) ': xs) k f = False
     MemHash ('(l, y       ) ': xs) k f = MemHash xs k f
-
--- type family HDel (xs :: *) (s :: Symbol) :: * where
---     HDel (HashK xs) s = HashK (Del xs s)
