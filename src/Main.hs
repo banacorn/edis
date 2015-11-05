@@ -32,10 +32,13 @@ main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
     result <- runRedis conn $ unP $ start
+        >>> sadd     (Proxy :: Proxy "T") (0 :: Integer)
+        >>> sadd     (Proxy :: Proxy "U") (1 :: Integer)
+        >>> sdiff    (Proxy :: Proxy "T") (Proxy :: Proxy "U")
         -- >>> del     (Proxy :: Proxy "H")
         -- >>> hset   (Proxy :: Proxy "H") (Proxy :: Proxy "a") ()
-        >>> hincrby   (Proxy :: Proxy "H") (Proxy :: Proxy "a") 42
-        >>> hsetnx    (Proxy :: Proxy "H") (Proxy :: Proxy "b") (0 :: Integer)
+        -- >>> hincrby   (Proxy :: Proxy "H") (Proxy :: Proxy "a") 42
+        -- >>> hsetnx    (Proxy :: Proxy "H") (Proxy :: Proxy "b") (0 :: Integer)
         -- >>> hget        (Proxy :: Proxy "H") (Proxy :: Proxy "a")
         -- >>> declare     (Proxy :: Proxy "A") (Proxy :: Proxy Integer)
         -- >>> set         (Proxy :: Proxy "A") (3 :: Integer)

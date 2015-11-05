@@ -1,12 +1,14 @@
 {-# LANGUAGE DeriveGeneric, DeriveDataTypeable
     , GADTs, RankNTypes
-    , DataKinds, PolyKinds
+    , DataKinds, PolyKinds, ConstraintKinds
     , TypeFamilies, TypeOperators #-}
 
 module Edis.Type where
 
 import           GHC.TypeLits
 
+import           Data.Type.Bool
+import           Data.Type.Equality
 import           Database.Redis (Reply(..), Redis)
 import qualified Database.Redis as Redis
 
@@ -139,6 +141,16 @@ type family RType (x :: *) :: Redis.RedisType where
     RType (SetK n) = Redis.Set
     RType (ZSetK n) = Redis.ZSet
     RType x = Redis.String
+
+type family IsString (x :: *) :: Bool where
+    IsString (HashK n) = False
+    IsString (ListK n) = False
+    IsString (SetK n) = False
+    IsString (ZSetK n) = False
+    IsString x         = True
+
+type StringOrNX xs s = (IsString (FromJust (Get xs s)) || Not (Member xs s)) ~ True
+type StringOfIntegerOrNX xs s = ((FromJust (Get xs s) == Integer) || Not (Member xs s)) ~ True
 
 type family IsHash (x :: *) :: Bool where
     IsHash (HashK n) = True

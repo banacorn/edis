@@ -9,6 +9,7 @@ module Edis (
     ,   (>>>)
 
     -- ,   Status(..)
+    ,   Redis.Reply
     ,   Redis.runRedis
     ,   Redis.connect
     ,   Redis.defaultConnectInfo
