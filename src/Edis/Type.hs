@@ -137,21 +137,27 @@ type family IsString (x :: *) :: Bool where
     IsString (StringOf n) = True
     IsString x            = False
 
-type StringOrNX xs s = (IsString (FromJust (Get xs s)) || Not (Member xs s)) ~ True
+type StringOrNX xs s          = (IsString (FromJust (Get xs s)) || Not (Member xs s)) ~ True
 type StringOfIntegerOrNX xs s = ((FromJust (Get xs s) == Integer) || Not (Member xs s)) ~ True
-type StringOfDoubleOrNX xs s = ((FromJust (Get xs s) == Double) || Not (Member xs s)) ~ True
+type StringOfDoubleOrNX xs s  = ((FromJust (Get xs s) == Double) || Not (Member xs s)) ~ True
 
 type family IsHash (x :: *) :: Bool where
     IsHash (HashOf n) = True
     IsHash x         = False
 
+type HashOrNX xs k = (IsHash (FromJust (Get xs k)) ||  Not (Member xs k)) ~ True
+
 type family IsList (x :: *) :: Bool where
     IsList (ListOf n) = True
     IsList x         = False
 
+type ListOrNX xs s = (IsList (FromJust (Get xs s)) || Not (Member xs s)) ~ True
+
 type family IsSet (x :: *) :: Bool where
     IsSet (SetOf n) = True
     IsSet x        = False
+
+type SetOrNX xs s = (IsSet (FromJust (Get xs s)) || Not (Member xs s)) ~ True
 
 type family IsZSet (x :: *) :: Bool where
     IsZSet (ZSetOf n) = True
