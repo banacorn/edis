@@ -89,22 +89,22 @@ hsetnx key field val = P $ Redis.hsetnx (encodeKey key) (encodeKey field) (encod
 --  List
 --------------------------------------------------------------------------------
 
-blpop :: (KnownSymbol s, Serialize x, ListK x ~ FromJust (Get xs s))
+blpop :: (KnownSymbol s, Serialize x, ListOf x ~ FromJust (Get xs s))
         => Proxy s -> Integer -> P xs xs (Either Reply (Maybe (ByteString, x)))
 blpop key timeout = P $ Redis.blpop [encodeKey key] timeout >>= decodeBPOP
 
-brpop :: (KnownSymbol s, Serialize x, ListK x ~ FromJust (Get xs s))
+brpop :: (KnownSymbol s, Serialize x, ListOf x ~ FromJust (Get xs s))
         => Proxy s -> Integer -> P xs xs (Either Reply (Maybe (ByteString, x)))
 brpop key timeout = P $ Redis.brpop [encodeKey key] timeout >>= decodeBPOP
 
 -- 1. the source and the target has to be a List
 -- 2. the source will be deleted once it's empty
 brpoplpush :: (KnownSymbol s, KnownSymbol t, Serialize x
-        , ListK x ~ FromJust (Get xs s), IsList (FromJust (Get xs t)) ~ True)
-        => Proxy s -> Proxy t -> Integer -> P xs (Set xs s (ListK x)) (Either Reply (Maybe x))
+        , ListOf x ~ FromJust (Get xs s), IsList (FromJust (Get xs t)) ~ True)
+        => Proxy s -> Proxy t -> Integer -> P xs (Set xs s (ListOf x)) (Either Reply (Maybe x))
 brpoplpush key dest timeout = P $ Redis.brpoplpush (encodeKey key) (encodeKey dest) timeout >>= decodeAsMaybe
 
-lindex :: (KnownSymbol s, Serialize x, ListK x ~ FromJust (Get xs s))
+lindex :: (KnownSymbol s, Serialize x, ListOf x ~ FromJust (Get xs s))
         => Proxy s -> Integer -> P xs xs (Either Reply (Maybe x))
 lindex key index = P $ Redis.lindex (encodeKey key) index >>= decodeAsMaybe
 
@@ -123,17 +123,17 @@ llen :: (KnownSymbol s, IsList (FromJust (Get xs s)) ~ True)
         => Proxy s -> P xs xs (Either Reply Integer)
 llen key = P $ Redis.llen (encodeKey key)
 
-lpop :: (KnownSymbol s, Serialize x, Just (ListK x) ~ Get xs s)
+lpop :: (KnownSymbol s, Serialize x, Just (ListOf x) ~ Get xs s)
         => Proxy s -> P xs xs (Either Reply (Maybe x))
 lpop key = P $ Redis.lpop (encodeKey key) >>= decodeAsMaybe
 
 lpush :: (KnownSymbol s, Serialize x
         , (Not (Member xs s) || IsList (FromJust (Get xs s))) ~ True)
-      => Proxy s -> x -> P xs (Set xs s (ListK x)) (Either Reply Integer)
+      => Proxy s -> x -> P xs (Set xs s (ListOf x)) (Either Reply Integer)
 lpush key val = P $ Redis.lpush (encodeKey key) [encode val]
 
 -- no operation will be performed when key does not yet exist.
-lpushx :: (KnownSymbol s, Serialize x, Just (ListK x) ~ Get xs s)
+lpushx :: (KnownSymbol s, Serialize x, Just (ListOf x) ~ Get xs s)
         => Proxy s -> x -> P xs xs (Either Reply Integer)
 lpushx key val = P $ Redis.lpushx (encodeKey key) (encode val)
 
@@ -158,7 +158,7 @@ ltrim :: (KnownSymbol s
       =>  Proxy s -> Integer -> Integer -> P xs xs (Either Reply Status)
 ltrim key start stop = P $ Redis.ltrim (encodeKey key) start stop
 
-rpop :: (KnownSymbol s, Serialize x, Just (ListK x) ~ Get xs s)
+rpop :: (KnownSymbol s, Serialize x, Just (ListOf x) ~ Get xs s)
         => Proxy s -> P xs xs (Either Reply (Maybe x))
 rpop key = P $ Redis.rpop (encodeKey key) >>= decodeAsMaybe
 
@@ -166,16 +166,16 @@ rpop key = P $ Redis.rpop (encodeKey key) >>= decodeAsMaybe
 rpoplpush :: (KnownSymbol s, KnownSymbol t, Serialize x
         , (Not (Member xs s) || IsList (FromJust (Get xs s))) ~ True
         , (Not (Member xs t) || IsList (FromJust (Get xs t))) ~ True)
-        => Proxy s -> Proxy t -> P xs (If (IsList (FromJust (Get xs s))) (Set xs s (ListK x)) xs) (Either Reply (Maybe x))
+        => Proxy s -> Proxy t -> P xs (If (IsList (FromJust (Get xs s))) (Set xs s (ListOf x)) xs) (Either Reply (Maybe x))
 rpoplpush key dest = P $ Redis.rpoplpush (encodeKey key) (encodeKey dest) >>= decodeAsMaybe
 
 rpush :: (KnownSymbol s, Serialize x
         , (Not (Member xs s) || IsList (FromJust (Get xs s))) ~ True)
-      => Proxy s -> x -> P xs (Set xs s (ListK x)) (Either Reply Integer)
+      => Proxy s -> x -> P xs (Set xs s (ListOf x)) (Either Reply Integer)
 rpush key val = P $ Redis.rpush (encodeKey key) [encode val]
 
 -- no operation will be performed when key does not yet exist.
-rpushx :: (KnownSymbol s, Serialize x, Just (ListK x) ~ Get xs s)
+rpushx :: (KnownSymbol s, Serialize x, Just (ListOf x) ~ Get xs s)
         => Proxy s -> x -> P xs xs (Either Reply Integer)
 rpushx key val = P $ Redis.rpushx (encodeKey key) (encode val)
 
@@ -185,7 +185,7 @@ rpushx key val = P $ Redis.rpushx (encodeKey key) (encode val)
 
 sadd :: (KnownSymbol s, Serialize x
         , (Not (Member xs s) || IsSet (FromJust (Get xs s))) ~ True)
-        => Proxy s -> x -> P xs (If (Member xs s) xs (Set xs s (SetK x))) (Either Reply Integer)
+        => Proxy s -> x -> P xs (If (Member xs s) xs (Set xs s (SetOf x))) (Either Reply Integer)
 sadd key val = P $ Redis.sadd (encodeKey key) [encode val]
 
 scard :: (KnownSymbol s
@@ -194,7 +194,7 @@ scard :: (KnownSymbol s
 scard key = P $ Redis.scard (encodeKey key)
 
 sdiff :: (KnownSymbol s, KnownSymbol t, Serialize x
-        , Just (SetK x) ~ Get xs s  -- must exist
+        , Just (SetOf x) ~ Get xs s  -- must exist
         , (Not (Member xs t) || IsSet (FromJust (Get xs t))) ~ True)
         => Proxy s -> Proxy t -> P xs xs (Either Reply [x])
 sdiff key key' = P $ Redis.sdiff [encodeKey key, encodeKey key'] >>= decodeAsList
@@ -206,11 +206,11 @@ sdiff key key' = P $ Redis.sdiff [encodeKey key, encodeKey key'] >>= decodeAsLis
 -- sdiffstore dest key = P $ Redis.sdiffstore (encodeKey dest) [encodeKey key]
 
 
-srem :: (Member xs s ~ True, FromJust (Get xs s) ~ SetK x, Serialize x, KnownSymbol s)
+srem :: (Member xs s ~ True, FromJust (Get xs s) ~ SetOf x, Serialize x, KnownSymbol s)
      => Proxy s -> x -> P xs xs (Either Reply Integer)
 srem key val = P $ Redis.srem (encode $ symbolVal key) [encode val]
 
-smembers :: (Member xs s ~ True, FromJust (Get xs s) ~ SetK x, Serialize x, KnownSymbol s)
+smembers :: (Member xs s ~ True, FromJust (Get xs s) ~ SetOf x, Serialize x, KnownSymbol s)
          => Proxy s -> P xs xs  (Either Reply [x])
 smembers key = P $ Redis.smembers (encode $ symbolVal key) >>= decodeAsList
 
@@ -308,7 +308,7 @@ restore :: ByteString -> Integer -> ByteString -> P xs xs (Either Reply Status)
 restore key n val = P $ Redis.restore key n val
 
 -- must be a List, a Set or a Sorted Set
-sort :: (KnownSymbol s, Serialize x, Member xs s ~ True, (Get xs s == Just (ListK x) || Get xs s == Just (SetK x) || Get xs s == Just (ZSetK x)) ~ True)
+sort :: (KnownSymbol s, Serialize x, Member xs s ~ True, (Get xs s == Just (ListOf x) || Get xs s == Just (SetOf x) || Get xs s == Just (ZSetOf x)) ~ True)
         => Proxy s -> SortOpts -> P xs xs (Either Reply [x])
 sort key opt = P $ Redis.sort (encodeKey key) opt >>= decodeAsList
 
@@ -328,7 +328,7 @@ getType key = P $ Redis.getType key
 --------------------------------------------------------------------------------
 
 append :: (KnownSymbol s, Serialize x, StringOrNX xs s)
-        => Proxy s -> x -> P xs (Set xs s ByteString) (Either Reply Integer)
+        => Proxy s -> x -> P xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
 append key val = P $ Redis.append (encodeKey key) (encode val)
 
 bitcount :: (KnownSymbol s, StringOrNX xs s)
@@ -341,82 +341,84 @@ bitcountRange key m n = P $ Redis.bitcountRange (encodeKey key) m n
 
 --  key must be String or non-existent
 bitopAnd :: (KnownSymbol s, KnownSymbol t, StringOrNX xs s)
-        => Proxy t -> Proxy s -> P xs (Set xs s ByteString) (Either Reply Integer)
+        => Proxy t -> Proxy s -> P xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
 bitopAnd dest key = P $ Redis.bitopAnd (encodeKey dest) [encodeKey key]
 
 bitopOr :: (KnownSymbol s, KnownSymbol t, StringOrNX xs s)
-        => Proxy t -> Proxy s -> P xs (Set xs s ByteString) (Either Reply Integer)
+        => Proxy t -> Proxy s -> P xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
 bitopOr dest key = P $ Redis.bitopOr (encodeKey dest) [encodeKey key]
 
 bitopXor :: (KnownSymbol s, KnownSymbol t, StringOrNX xs s)
-        => Proxy t -> Proxy s -> P xs (Set xs s ByteString) (Either Reply Integer)
+        => Proxy t -> Proxy s -> P xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
 bitopXor dest key = P $ Redis.bitopXor (encodeKey dest) [encodeKey key]
 
 bitopNot :: (KnownSymbol s, KnownSymbol t, StringOrNX xs s)
-        => Proxy t -> Proxy s -> P xs (Set xs s ByteString) (Either Reply Integer)
+        => Proxy t -> Proxy s -> P xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
 bitopNot dest key = P $ Redis.bitopNot (encodeKey dest) (encodeKey key)
 
 decr :: (KnownSymbol s, StringOfIntegerOrNX xs s)
-        => Proxy s -> P xs (Set xs s Integer) (Either Reply Integer)
+        => Proxy s -> P xs (Set xs s (StringOf Integer)) (Either Reply Integer)
 decr key = P $ Redis.decr (encodeKey key)
 
 decrby :: (KnownSymbol s, StringOfIntegerOrNX xs s)
-        => Proxy s -> Integer -> P xs (Set xs s Integer) (Either Reply Integer)
+        => Proxy s -> Integer -> P xs (Set xs s (StringOf Integer)) (Either Reply Integer)
 decrby key n = P $ Redis.decrby (encodeKey key) n
 
-get :: (KnownSymbol s, Serialize x, Member xs s ~ True, x ~ FromJust (Get xs s))
+get :: (KnownSymbol s, Serialize x, StringOf x ~ FromJust (Get xs s))
         => Proxy s -> P xs xs (Either Reply (Maybe x))
 get key = P $ Redis.get (encodeKey key) >>= decodeAsMaybe
 
-getbit :: ByteString -> Integer -> P xs xs (Either Reply Integer)
-getbit key n = P $ Redis.getbit key n
+getbit :: (KnownSymbol s, StringOrNX xs s)
+        => Proxy s -> Integer -> P xs xs (Either Reply Integer)
+getbit key n = P $ Redis.getbit (encodeKey key) n
 
-getrange :: (KnownSymbol s, Serialize x, Member xs s ~ True, x ~ FromJust (Get xs s))
+getrange :: (KnownSymbol s, Serialize x, StringOf x ~ FromJust (Get xs s))
         => Proxy s -> Integer -> Integer -> P xs xs (Either Reply x)
 getrange key n m = P $ Redis.getrange (encodeKey key) n m >>= decodeAsAnything
 
-getset :: (KnownSymbol s, Serialize x, Serialize y, Member xs s ~ True, y ~ FromJust (Get xs s))
+getset :: (KnownSymbol s, Serialize x, Serialize y, StringOf y ~ FromJust (Get xs s))
         => Proxy s -> x -> P xs xs (Either Reply (Maybe y))
 getset key val = P $ Redis.getset (encodeKey key) (encode val) >>= decodeAsMaybe
 
-incr :: (KnownSymbol s, (Not (Member xs s) || Get xs s == Just Integer) ~ True)
+incr :: (KnownSymbol s, StringOfIntegerOrNX xs s)
         => Proxy s -> P xs xs (Either Reply Integer)
 incr key = P $ Redis.incr (encodeKey key)
 
-incrby :: (KnownSymbol s, (Not (Member xs s) || Get xs s == Just Integer) ~ True)
+incrby :: (KnownSymbol s, StringOfIntegerOrNX xs s)
         => Proxy s -> Integer -> P xs xs (Either Reply Integer)
 incrby key n = P $ Redis.incrby (encodeKey key) n
 
-incrbyfloat :: (KnownSymbol s, (Not (Member xs s) || Get xs s == Just Double) ~ True)
+incrbyfloat :: (KnownSymbol s, StringOfDoubleOrNX xs s)
         => Proxy s -> Double -> P xs xs (Either Reply Double)
 incrbyfloat key n = P $ Redis.incrbyfloat (encodeKey key) n
 
 psetex :: (KnownSymbol s, Serialize x)
-        => Proxy s -> Integer -> x -> P xs (Set xs s x) (Either Reply Status)
+        => Proxy s -> Integer -> x -> P xs (Set xs s (StringOf x)) (Either Reply Status)
 psetex key n val = P $ Redis.psetex (encodeKey key) n (encode val)
 
-set :: (Serialize x, KnownSymbol s)
-        => Proxy s -> x -> P xs (Set xs s x) (Either Reply Status)
+set :: (KnownSymbol s, Serialize x)
+        => Proxy s -> x -> P xs (Set xs s (StringOf x)) (Either Reply Status)
 set key val = P $ Redis.set (encodeKey key) (encode val)
 
-setbit :: (Serialize x, KnownSymbol s)
-        => Proxy s -> Integer -> x -> P xs (Set xs s x) (Either Reply Integer)
+setbit :: (KnownSymbol s, Serialize x, StringOrNX xs s)
+        => Proxy s -> Integer -> x -> P xs (Set xs s (StringOf x)) (Either Reply Integer)
 setbit key n val = P $ Redis.setbit (encodeKey key) n (encode val)
 
-setex :: (Serialize x, KnownSymbol s)
-        => Proxy s -> Integer -> x -> P xs (Set xs s x) (Either Reply Status)
+setex :: (KnownSymbol s, Serialize x)
+        => Proxy s -> Integer -> x -> P xs (Set xs s (StringOf x)) (Either Reply Status)
 setex key n val = P $ Redis.setex (encodeKey key) n (encode val)
 
-setnx :: (Serialize x, KnownSymbol s)
-        => Proxy s -> x -> P xs (If (Member xs s) xs (Set xs s x)) (Either Reply Bool)
+setnx :: (KnownSymbol s, Serialize x)
+        => Proxy s -> x -> P xs (If (Member xs s) xs (Set xs s (StringOf x))) (Either Reply Bool)
 setnx key val = P $ Redis.setnx (encodeKey key) (encode val)
 
-setrange :: (Serialize x, KnownSymbol s)
-        => Proxy s -> Integer -> x -> P xs (Set xs s x) (Either Reply Integer)
+setrange :: (KnownSymbol s, Serialize x, StringOrNX xs s)
+        => Proxy s -> Integer -> x -> P xs (Set xs s (StringOf x)) (Either Reply Integer)
 setrange key n val = P $ Redis.setrange (encodeKey key) n (encode val)
 
-strlen :: ByteString -> P xs xs (Either Reply Integer)
-strlen key = P $ Redis.strlen key
+strlen :: (KnownSymbol s, StringOrNX xs s)
+        => Proxy s -> P xs xs (Either Reply Integer)
+strlen key = P $ Redis.strlen (encodeKey key)
 
 --------------------------------------------------------------------------------
 --  Helper functions

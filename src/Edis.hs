@@ -3,9 +3,9 @@ module Edis (
     ,   Proxy(..)
     ,   P(..)
     ,   PMonad(..)
-    ,   ListK(..)
-    ,   SetK(..)
-    ,   HashK(..)
+    ,   ListOf(..)
+    ,   SetOf(..)
+    ,   HashOf(..)
     ,   (>>>)
 
     -- ,   Status(..)

@@ -120,72 +120,61 @@ infixl 1 >>>
 a >>> b = bind a (const b)
 
 --------------------------------------------------------------------------------
---  Redis Data Types (and Kinds)
+--  Redis Data Types
 --------------------------------------------------------------------------------
 
-data NoneK :: * -> *
-data StringK :: * -> *
-data HashK :: [ (Symbol, *) ] -> *
-data ListK :: * -> *
-data SetK :: * -> *
-data ZSetK :: * -> *
-
+data StringOf :: * -> *
+data HashOf :: [ (Symbol, *) ] -> *
+data ListOf :: * -> *
+data SetOf :: * -> *
+data ZSetOf :: * -> *
 
 --------------------------------------------------------------------------------
 --  Redis Data Type
 --------------------------------------------------------------------------------
 
-type family RType (x :: *) :: Redis.RedisType where
-    RType (HashK n) = Redis.Hash
-    RType (ListK n) = Redis.List
-    RType (SetK n) = Redis.Set
-    RType (ZSetK n) = Redis.ZSet
-    RType x = Redis.String
-
 type family IsString (x :: *) :: Bool where
-    IsString (HashK n) = False
-    IsString (ListK n) = False
-    IsString (SetK n) = False
-    IsString (ZSetK n) = False
-    IsString x         = True
+    IsString (StringOf n) = True
+    IsString x            = False
 
 type StringOrNX xs s = (IsString (FromJust (Get xs s)) || Not (Member xs s)) ~ True
 type StringOfIntegerOrNX xs s = ((FromJust (Get xs s) == Integer) || Not (Member xs s)) ~ True
+type StringOfDoubleOrNX xs s = ((FromJust (Get xs s) == Double) || Not (Member xs s)) ~ True
 
 type family IsHash (x :: *) :: Bool where
-    IsHash (HashK n) = True
+    IsHash (HashOf n) = True
     IsHash x         = False
 
 type family IsList (x :: *) :: Bool where
-    IsList (ListK n) = True
+    IsList (ListOf n) = True
     IsList x         = False
 
 type family IsSet (x :: *) :: Bool where
-    IsSet (SetK n) = True
+    IsSet (SetOf n) = True
     IsSet x        = False
 
 type family IsZSet (x :: *) :: Bool where
-    IsZSet (ZSetK n) = True
+    IsZSet (ZSetOf n) = True
     IsZSet x         = False
 
 type family GetHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) :: Maybe * where
     GetHash '[]                    k f = Nothing
-    GetHash ('(k, HashK hs) ': xs) k f = Get hs f
+    GetHash ('(k, HashOf hs) ': xs) k f = Get hs f
     GetHash ('(k, x       ) ': xs) k f = Nothing
     GetHash ('(l, y       ) ': xs) k f = GetHash xs k f
 
 type family SetHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) (x :: *) :: [ (Symbol, *) ] where
-    SetHash '[]                    k f x = '(k, HashK (Set '[] f x)) ': '[]
-    SetHash ('(k, HashK hs) ': xs) k f x = '(k, HashK (Set hs  f x)) ': xs
+    SetHash '[]                    k f x = '(k, HashOf (Set '[] f x)) ': '[]
+    SetHash ('(k, HashOf hs) ': xs) k f x = '(k, HashOf (Set hs  f x)) ': xs
     SetHash ('(l, y       ) ': xs) k f x = '(l, y                  ) ': SetHash xs k f x
 
 type family DelHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) :: [ (Symbol, *) ] where
     DelHash '[]                    k f = '[]
-    DelHash ('(k, HashK hs) ': xs) k f = '(k, HashK (Del hs f )) ': xs
+    DelHash ('(k, HashOf hs) ': xs) k f = '(k, HashOf (Del hs f )) ': xs
     DelHash ('(l, y       ) ': xs) k f = '(l, y                ) ': DelHash xs k f
 
 type family MemHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) :: Bool where
     MemHash '[]                    k f = False
-    MemHash ('(k, HashK hs) ': xs) k f = Member hs f
+    MemHash ('(k, HashOf hs) ': xs) k f = Member hs f
     MemHash ('(k, x       ) ': xs) k f = False
     MemHash ('(l, y       ) ': xs) k f = MemHash xs k f
