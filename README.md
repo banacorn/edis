@@ -1,2 +1,3 @@
 # edis
-redis with types
+
+Statically typechecked Redis

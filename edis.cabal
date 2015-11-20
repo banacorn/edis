@@ -7,7 +7,7 @@ synopsis:            Statically typechecked Redis
 description:         Statically typechecked Redis
 license:             MIT
 license-file:        LICENSE
-author:              Ting-Yen Lai
+author:              Ting-Yan Lai
 maintainer:          banacorn@gmail.com
 -- copyright:
 category:            Database
@@ -19,7 +19,7 @@ library
     exposed-modules:    Edis
     -- other-modules:  Main
     -- other-extensions:
-    build-depends:      base >=4.8
+    build-depends:      base >=4.8 && <5
                     ,   bytestring >=0.10
                     ,   hedis >=0.6
                     ,   cereal >=0.4
