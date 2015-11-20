@@ -3,8 +3,8 @@
 
 name:                edis
 version:             0.0.1.0
-synopsis:            redis with types
--- description:
+synopsis:            Statically typechecked Redis
+description:         Statically typechecked Redis
 license:             MIT
 license-file:        LICENSE
 author:              Ting-Yen Lai
