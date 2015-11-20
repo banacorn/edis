@@ -16,7 +16,7 @@ extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
-    exposed-modules:    Edis
+    exposed-modules:    Database.Edis
     -- other-modules:  Main
     -- other-extensions:
     build-depends:      base >=4.8 && <5

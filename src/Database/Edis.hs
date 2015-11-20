@@ -1,5 +1,5 @@
-module Edis (
-        module Edis.Promoted
+module Database.Edis (
+        module Database.Edis.Promoted
     ,   Proxy(..)
     ,   Edis(..)
     ,   IMonad(..)
@@ -17,5 +17,5 @@ module Edis (
 
 import qualified Database.Redis as Redis
 import Data.Proxy
-import Edis.Type
-import Edis.Promoted
+import Database.Edis.Type
+import Database.Edis.Promoted

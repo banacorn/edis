@@ -1,7 +1,7 @@
-{-# LANGUAGE DataKinds, ConstraintKinds,
+{-# LANGUAGE DataKinds, ConstraintKinds, PolyKinds,
     TypeFamilies, TypeOperators #-}
 
-module Edis.Type where
+module Database.Edis.Type where
 
 import           GHC.TypeLits
 

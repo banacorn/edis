@@ -1,8 +1,8 @@
 {-# LANGUAGE DataKinds, TypeFamilies, TypeOperators, OverloadedStrings #-}
 
-module Edis.Promoted where
+module Database.Edis.Promoted where
 
-import Edis.Type
+import Database.Edis.Type
 
 import Data.Bifunctor           (first)
 import Data.ByteString          (ByteString)
