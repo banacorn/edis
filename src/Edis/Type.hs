@@ -1,7 +1,5 @@
-{-# LANGUAGE DeriveGeneric, DeriveDataTypeable
-    , GADTs, RankNTypes
-    , DataKinds, PolyKinds, ConstraintKinds
-    , TypeFamilies, TypeOperators #-}
+{-# LANGUAGE DataKinds, ConstraintKinds,
+    TypeFamilies, TypeOperators #-}
 
 module Edis.Type where
 
@@ -54,7 +52,11 @@ type family Member (xs :: [ (Symbol, *) ]) (s :: Symbol) :: Bool where
 -- getEx1' = ()
 
 -- Get :: Key -> [ (Key, Type) ] -> Maybe Type
-type family Get (xs :: [ (Symbol, *) ]) (s :: Symbol) :: Maybe * where
+type family Get
+    (xs :: [ (Symbol, *) ])
+    (s :: Symbol)
+    :: Maybe * where
+
     Get '[]             s = Nothing
     Get ('(s, x) ': xs) s = Just x
     Get ('(t, x) ': xs) s = Get xs s
@@ -103,25 +105,33 @@ type family Del (xs :: [ (Symbol, *) ]) (s :: Symbol) :: [ (Symbol, *) ] where
 --  P
 --------------------------------------------------------------------------------
 
-class PMonad m where
+class IMonad m where
     unit :: a -> m p p a
     bind :: m p q a -> (a -> m q r b) -> m p r b
 
-data P p q a = P { unP :: Redis a }
+newtype Edis p q a = Edis { unEdis :: Redis a }
+-- newtype Edis' m f p q a = Edis' { unEdis' :: m (f a) }
 
-instance PMonad P where
-    unit = P . return
-    bind m f = P (unP m >>= unP . f )
+instance IMonad Edis where
+    unit = Edis . return
+    bind m f = Edis (unEdis m >>= unEdis . f )
+--
+-- instance Redis.RedisCtx m f => IMonad (Edis' m f) where
+--     unit = Edis' . _
+--     bind c g = _
+    -- unit = Edis' . return
+    -- bind m f = Edis' (unEdis m >>= unEdis' . f )
 
 infixl 1 >>>
 
--- Kleisli arrow
-(>>>) :: PMonad m => m p q a -> m q r b -> m p r b
+(>>>) :: IMonad m => m p q a -> m q r b -> m p r b
 a >>> b = bind a (const b)
 
 --------------------------------------------------------------------------------
 --  Redis Data Types
 --------------------------------------------------------------------------------
+
+data U n = String' n | Hash' n
 
 data StringOf :: * -> *
 data HashOf :: [ (Symbol, *) ] -> *

@@ -1,8 +1,8 @@
 module Edis (
         module Edis.Promoted
     ,   Proxy(..)
-    ,   P(..)
-    ,   PMonad(..)
+    ,   Edis(..)
+    ,   IMonad(..)
     ,   ListOf(..)
     ,   SetOf(..)
     ,   HashOf(..)
