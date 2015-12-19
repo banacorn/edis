@@ -4,7 +4,6 @@ module Database.Edis.Promoted where
 
 import Database.Edis.Type
 
-import Data.Bifunctor           (first)
 import Data.ByteString          (ByteString)
 import Data.Maybe               (fromJust)
 import Data.Proxy               (Proxy)
@@ -28,13 +27,13 @@ start = Edis (return ())
 --  Declaration
 --------------------------------------------------------------------------------
 
-declare :: (KnownSymbol s, Member xs s ~ False)
+declare :: (KnownSymbol s, Member xs s ~ 'False)
         => Proxy s -> Proxy x -> Edis xs (Set xs s x) ()
-declare s x = Edis $ return ()
+declare _ _ = Edis $ return ()
 
-renounce :: (KnownSymbol s, Member xs s ~ True)
+renounce :: (KnownSymbol s, Member xs s ~ 'True)
         => Proxy s -> Edis xs (Del xs s) ()
-renounce s = Edis $ return ()
+renounce _ = Edis $ return ()
 
 --------------------------------------------------------------------------------
 --  Hashes
@@ -51,7 +50,7 @@ hexists :: (KnownSymbol k, KnownSymbol f, HashOrNX xs k)
 hexists key field = Edis $ Redis.hexists (encodeKey key) (encodeKey field)
 
 hget :: (KnownSymbol k, KnownSymbol f, Serialize x
-        , Just (StringOf x) ~ GetHash xs k f)
+        , 'Just (StringOf x) ~ GetHash xs k f)
         => Proxy k -> Proxy f
         -> Edis xs xs (Either Reply (Maybe x))
 hget key field = Edis $ Redis.hget (encodeKey key) (encodeKey field) >>= decodeAsMaybe
@@ -126,7 +125,7 @@ llen :: (KnownSymbol s, ListOrNX xs s)
         -> Edis xs xs (Either Reply Integer)
 llen key = Edis $ Redis.llen (encodeKey key)
 
-lpop :: (KnownSymbol s, Serialize x, Just (ListOf x) ~ Get xs s)
+lpop :: (KnownSymbol s, Serialize x, 'Just (ListOf x) ~ Get xs s)
         => Proxy s
         -> Edis xs xs (Either Reply (Maybe x))
 lpop key = Edis $ Redis.lpop (encodeKey key) >>= decodeAsMaybe
@@ -137,7 +136,7 @@ lpush :: (KnownSymbol s, Serialize x, ListOrNX xs s)
 lpush key val = Edis $ Redis.lpush (encodeKey key) [encode val]
 
 -- no operation will be performed when key does not yet exist.
-lpushx :: (KnownSymbol s, Serialize x, Just (ListOf x) ~ Get xs s)
+lpushx :: (KnownSymbol s, Serialize x, 'Just (ListOf x) ~ Get xs s)
         => Proxy s -> x
         -> Edis xs xs (Either Reply Integer)
 lpushx key val = Edis $ Redis.lpushx (encodeKey key) (encode val)
@@ -145,14 +144,14 @@ lpushx key val = Edis $ Redis.lpushx (encodeKey key) (encode val)
 lrange :: (KnownSymbol s, Serialize x, ListOrNX xs s)
      => Proxy s -> Integer -> Integer
      -> Edis xs xs (Either Reply [x])
-lrange key start stop = Edis $ Redis.lrange (encodeKey key) start stop >>= decodeAsList
+lrange key from to = Edis $ Redis.lrange (encodeKey key) from to >>= decodeAsList
 
 lrem :: (KnownSymbol s, Serialize x, ListOrNX xs s)
       => Proxy s -> Integer -> x
       -> Edis xs xs (Either Reply Integer)
 lrem key count val = Edis $ Redis.lrem (encodeKey key) count (encode val)
 
-lset :: (KnownSymbol s, Serialize x, IsList (FromJust (Get xs s)) ~ True)
+lset :: (KnownSymbol s, Serialize x, IsList (FromJust (Get xs s)) ~ 'True)
       => Proxy s -> Integer -> x
       -> Edis xs xs (Either Reply Status)
 lset key index val = Edis $ Redis.lset (encodeKey key) index (encode val)
@@ -160,9 +159,9 @@ lset key index val = Edis $ Redis.lset (encodeKey key) index (encode val)
 ltrim :: (KnownSymbol s, ListOrNX xs s)
       =>  Proxy s -> Integer -> Integer
       -> Edis xs xs (Either Reply Status)
-ltrim key start stop = Edis $ Redis.ltrim (encodeKey key) start stop
+ltrim key from to = Edis $ Redis.ltrim (encodeKey key) from to
 
-rpop :: (KnownSymbol s, Serialize x, Just (ListOf x) ~ Get xs s)
+rpop :: (KnownSymbol s, Serialize x, 'Just (ListOf x) ~ Get xs s)
         => Proxy s
         -> Edis xs xs (Either Reply (Maybe x))
 rpop key = Edis $ Redis.rpop (encodeKey key) >>= decodeAsMaybe
@@ -182,7 +181,7 @@ rpush :: (KnownSymbol s, Serialize x, ListOrNX xs s)
 rpush key val = Edis $ Redis.rpush (encodeKey key) [encode val]
 
 -- no operation will be performed when key does not yet exist.
-rpushx :: (KnownSymbol s, Serialize x, Just (ListOf x) ~ Get xs s)
+rpushx :: (KnownSymbol s, Serialize x, 'Just (ListOf x) ~ Get xs s)
         => Proxy s -> x
         -> Edis xs xs (Either Reply Integer)
 rpushx key val = Edis $ Redis.rpushx (encodeKey key) (encode val)
@@ -294,7 +293,7 @@ randomkey = Edis $ Redis.randomkey
 
 -- 1. the old key must exist
 -- 2. the old key and the new key must be different
-rename :: (KnownSymbol s, KnownSymbol t, Member xs s ~ True, Get xs s ~ Just x, (s == t) ~ False)
+rename :: (KnownSymbol s, KnownSymbol t, Member xs s ~ 'True, Get xs s ~ 'Just x, (s == t) ~ 'False)
         => Proxy s -> Proxy t -> Edis xs (Set (Del xs s) t x) (Either Reply Status)
 rename key key' = Edis $ Redis.rename (encodeKey key) (encodeKey key')
 
@@ -305,7 +304,7 @@ rename key key' = Edis $ Redis.rename (encodeKey key) (encodeKey key')
 -- 3. if the new key exists
 --      then nothing happens
 --      else the new key is removed
-renamenx :: (KnownSymbol s, KnownSymbol t, Member xs s ~ True, Get xs s ~ Just x, (s == t) ~ False)
+renamenx :: (KnownSymbol s, KnownSymbol t, Member xs s ~ 'True, Get xs s ~ 'Just x, (s == t) ~ 'False)
         => Proxy s -> Proxy t -> Edis xs (If (Member xs t) xs (Del xs s)) (Either Reply Bool)
 renamenx key key' = Edis $ Redis.renamenx (encodeKey key) (encodeKey key')
 
@@ -313,13 +312,13 @@ restore :: ByteString -> Integer -> ByteString -> Edis xs xs (Either Reply Statu
 restore key n val = Edis $ Redis.restore key n val
 
 -- must be a List, a Set or a Sorted Set
-sort :: (KnownSymbol s, Serialize x, Member xs s ~ True
-        , (Get xs s == Just (ListOf x) || Get xs s == Just (SetOf x) || Get xs s == Just (ZSetOf x)) ~ True)
+sort :: (KnownSymbol s, Serialize x, Member xs s ~ 'True
+        , (Get xs s == 'Just (ListOf x) || Get xs s == 'Just (SetOf x) || Get xs s == 'Just (ZSetOf x)) ~ 'True)
         => Proxy s -> SortOpts -> Edis xs xs (Either Reply [x])
 sort key opt = Edis $ Redis.sort (encodeKey key) opt >>= decodeAsList
 
-sortStore :: (KnownSymbol s, KnownSymbol t, Member xs s ~ True, FromJust (Get xs s) ~ x
-        , (IsList (FromJust (Get xs s)) || IsSet (FromJust (Get xs s)) || IsZSet (FromJust (Get xs s))) ~ True)
+sortStore :: (KnownSymbol s, KnownSymbol t, Member xs s ~ 'True, FromJust (Get xs s) ~ x
+        , (IsList (FromJust (Get xs s)) || IsSet (FromJust (Get xs s)) || IsZSet (FromJust (Get xs s))) ~ 'True)
         => Proxy s -> Proxy t -> SortOpts -> Edis xs (Set xs s x) (Either Reply Integer)
 sortStore key dest opt = Edis $ Redis.sortStore (encodeKey key) (encodeKey dest) opt
 
@@ -457,7 +456,7 @@ decodeAsList (Right strs) = case mapM decode strs of
     Right vals     -> return $ Right vals
 
 fromRight :: Either a b -> b
-fromRight (Left e) = error "Left val"
+fromRight (Left _) = error "Left val"
 fromRight (Right e) = e
 
 fromMaybeResult :: Either Reply (Maybe x) -> x

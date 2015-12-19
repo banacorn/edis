@@ -3,9 +3,9 @@ module Database.Edis (
     ,   Proxy(..)
     ,   Edis(..)
     ,   IMonad(..)
-    ,   ListOf(..)
-    ,   SetOf(..)
-    ,   HashOf(..)
+    ,   ListOf
+    ,   SetOf
+    ,   HashOf
     ,   (>>>)
 
     -- ,   Status(..)

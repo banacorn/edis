@@ -7,8 +7,7 @@ import           GHC.TypeLits
 
 import           Data.Type.Bool
 import           Data.Type.Equality
-import           Database.Redis (Reply(..), Redis)
-import qualified Database.Redis as Redis
+import           Database.Redis (Redis)
 
 --------------------------------------------------------------------------------
 --  Maybe
@@ -16,7 +15,7 @@ import qualified Database.Redis as Redis
 
 --  FromJust : (Maybe k) -> k
 type family FromJust (x :: Maybe k) :: k where
-    FromJust (Just k) = k
+    FromJust ('Just k) = k
 
 --------------------------------------------------------------------------------
 --  Dictionary Membership
@@ -24,8 +23,8 @@ type family FromJust (x :: Maybe k) :: k where
 
 -- Member :: Key -> [ (Key, Type) ] -> Bool
 type family Member (xs :: [ (Symbol, *) ]) (s :: Symbol) :: Bool where
-    Member '[]             s = False
-    Member ('(s, x) ': xs) s = True
+    Member '[]             s = 'False
+    Member ('(s, x) ': xs) s = 'True
     Member ('(t, x) ': xs) s = Member xs s
 
 -- memberEx0 :: (Member "C" '[] ~ False) => ()
@@ -57,8 +56,8 @@ type family Get
     (s :: Symbol)
     :: Maybe * where
 
-    Get '[]             s = Nothing
-    Get ('(s, x) ': xs) s = Just x
+    Get '[]             s = 'Nothing
+    Get ('(s, x) ': xs) s = 'Just x
     Get ('(t, x) ': xs) s = Get xs s
 
 
@@ -110,17 +109,10 @@ class IMonad m where
     bind :: m p q a -> (a -> m q r b) -> m p r b
 
 newtype Edis p q a = Edis { unEdis :: Redis a }
--- newtype Edis' m f p q a = Edis' { unEdis' :: m (f a) }
 
 instance IMonad Edis where
     unit = Edis . return
     bind m f = Edis (unEdis m >>= unEdis . f )
---
--- instance Redis.RedisCtx m f => IMonad (Edis' m f) where
---     unit = Edis' . _
---     bind c g = _
-    -- unit = Edis' . return
-    -- bind m f = Edis' (unEdis m >>= unEdis' . f )
 
 infixl 1 >>>
 
@@ -144,39 +136,39 @@ data ZSetOf :: * -> *
 --------------------------------------------------------------------------------
 
 type family IsString (x :: *) :: Bool where
-    IsString (StringOf n) = True
-    IsString x            = False
+    IsString (StringOf n) = 'True
+    IsString x            = 'False
 
-type StringOrNX xs s          = (IsString (FromJust (Get xs s)) || Not (Member xs s)) ~ True
-type StringOfIntegerOrNX xs s = ((FromJust (Get xs s) == Integer) || Not (Member xs s)) ~ True
-type StringOfDoubleOrNX xs s  = ((FromJust (Get xs s) == Double) || Not (Member xs s)) ~ True
+type StringOrNX xs s          = (IsString (FromJust (Get xs s)) || Not (Member xs s)) ~ 'True
+type StringOfIntegerOrNX xs s = ((FromJust (Get xs s) == Integer) || Not (Member xs s)) ~ 'True
+type StringOfDoubleOrNX xs s  = ((FromJust (Get xs s) == Double) || Not (Member xs s)) ~ 'True
 
 type family IsHash (x :: *) :: Bool where
-    IsHash (HashOf n) = True
-    IsHash x         = False
+    IsHash (HashOf n) = 'True
+    IsHash x          = 'False
 
-type HashOrNX xs k = (IsHash (FromJust (Get xs k)) ||  Not (Member xs k)) ~ True
+type HashOrNX xs k = (IsHash (FromJust (Get xs k)) ||  Not (Member xs k)) ~ 'True
 
 type family IsList (x :: *) :: Bool where
-    IsList (ListOf n) = True
-    IsList x         = False
+    IsList (ListOf n) = 'True
+    IsList x          = 'False
 
-type ListOrNX xs s = (IsList (FromJust (Get xs s)) || Not (Member xs s)) ~ True
+type ListOrNX xs s = (IsList (FromJust (Get xs s)) || Not (Member xs s)) ~ 'True
 
 type family IsSet (x :: *) :: Bool where
-    IsSet (SetOf n) = True
-    IsSet x        = False
+    IsSet (SetOf n) = 'True
+    IsSet x         = 'False
 
-type SetOrNX xs s = (IsSet (FromJust (Get xs s)) || Not (Member xs s)) ~ True
+type SetOrNX xs s = (IsSet (FromJust (Get xs s)) || Not (Member xs s)) ~ 'True
 
 type family IsZSet (x :: *) :: Bool where
-    IsZSet (ZSetOf n) = True
-    IsZSet x         = False
+    IsZSet (ZSetOf n) = 'True
+    IsZSet x          = 'False
 
 type family GetHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) :: Maybe * where
-    GetHash '[]                    k f = Nothing
+    GetHash '[]                    k f = 'Nothing
     GetHash ('(k, HashOf hs) ': xs) k f = Get hs f
-    GetHash ('(k, x       ) ': xs) k f = Nothing
+    GetHash ('(k, x       ) ': xs) k f = 'Nothing
     GetHash ('(l, y       ) ': xs) k f = GetHash xs k f
 
 type family SetHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) (x :: *) :: [ (Symbol, *) ] where
@@ -190,7 +182,7 @@ type family DelHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) :: [ (Sy
     DelHash ('(l, y       ) ': xs) k f = '(l, y                ) ': DelHash xs k f
 
 type family MemHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) :: Bool where
-    MemHash '[]                    k f = False
+    MemHash '[]                    k f = 'False
     MemHash ('(k, HashOf hs) ': xs) k f = Member hs f
-    MemHash ('(k, x       ) ': xs) k f = False
+    MemHash ('(k, x       ) ': xs) k f = 'False
     MemHash ('(l, y       ) ': xs) k f = MemHash xs k f
