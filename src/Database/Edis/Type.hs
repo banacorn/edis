@@ -160,6 +160,7 @@ type family IsSet (x :: *) :: Bool where
     IsSet x         = 'False
 
 type SetOrNX xs s = (IsSet (FromJust (Get xs s)) || Not (Member xs s)) ~ 'True
+type SetOrNX' xs s = (IsSet (FromJust (Get xs s)) || Not (Member xs s))
 
 type family IsZSet (x :: *) :: Bool where
     IsZSet (ZSetOf n) = 'True
