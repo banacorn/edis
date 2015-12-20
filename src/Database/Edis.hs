@@ -8,7 +8,9 @@ module Database.Edis (
     ,   module Database.Edis.Promoted.Connection
     ,   module Database.Edis.Promoted.Scripting
     ,   module Database.Edis.Promoted.Server
+    ,   module Database.Edis.Promoted.PubSub
     ,   module Database.Edis.Promoted
+    ,   ByteString
     ,   Proxy(..)
     ,   Edis(..)
     ,   IMonad(..)
@@ -26,6 +28,7 @@ module Database.Edis (
 
 import qualified Database.Redis as Redis
 import Data.Proxy
+import Data.ByteString
 import Database.Edis.Type
 import Database.Edis.Promoted
 import Database.Edis.Promoted.String
@@ -37,3 +40,4 @@ import Database.Edis.Promoted.ZSet
 import Database.Edis.Promoted.Connection
 import Database.Edis.Promoted.Scripting
 import Database.Edis.Promoted.Server
+import Database.Edis.Promoted.PubSub

@@ -4,7 +4,6 @@ module Main where
 
 import Database.Edis
 
-
 main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
