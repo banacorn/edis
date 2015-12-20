@@ -40,6 +40,13 @@ decodeAsList (Right strs) = case mapM decode strs of
     Left decodeErr -> return $ Left (Error $ encode decodeErr)
     Right vals     -> return $ Right vals
 
+decodeAsListWithScores :: (Serialize x) => Either Reply [(ByteString, Double)] -> Redis (Either Reply [(x, Double)])
+decodeAsListWithScores (Left replyErr) = return $ Left replyErr
+decodeAsListWithScores (Right pairs) = let (strs, scores) = unzip pairs in
+    case mapM decode strs of
+        Left decodeErr -> return $ Left (Error $ encode decodeErr)
+        Right vals     -> return $ Right (zip vals scores)
+
 fromRight :: Either a b -> b
 fromRight (Left _) = error "Left val"
 fromRight (Right e) = e

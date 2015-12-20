@@ -166,6 +166,8 @@ type family IsZSet (x :: *) :: Bool where
     IsZSet (ZSetOf n) = 'True
     IsZSet x          = 'False
 
+type ZSetOrNX xs s = (IsZSet (FromJust (Get xs s)) || Not (Member xs s)) ~ 'True
+
 type family GetHash (xs :: [ (Symbol, *) ]) (k :: Symbol) (f :: Symbol) :: Maybe * where
     GetHash '[]                    k f = 'Nothing
     GetHash ('(k, HashOf hs) ': xs) k f = Get hs f
