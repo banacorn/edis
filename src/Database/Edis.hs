@@ -5,6 +5,7 @@ module Database.Edis (
     ,   module Database.Edis.Promoted.Set
     ,   module Database.Edis.Promoted.Key
     ,   module Database.Edis.Promoted.Connection
+    ,   module Database.Edis.Promoted.Scripting
     ,   module Database.Edis.Promoted
     ,   Proxy(..)
     ,   Edis(..)
@@ -31,3 +32,4 @@ import Database.Edis.Promoted.Key
 import Database.Edis.Promoted.Hash
 import Database.Edis.Promoted.Set
 import Database.Edis.Promoted.Connection
+import Database.Edis.Promoted.Scripting
