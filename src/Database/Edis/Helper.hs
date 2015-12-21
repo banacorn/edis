@@ -1,11 +1,13 @@
-module Database.Edis.Promoted.Helper where
+{-# OPTIONS_HADDOCK hide #-}
+
+module Database.Edis.Helper where
 
 import Data.ByteString          (ByteString)
 import Data.Maybe               (fromJust)
-import GHC.TypeLits
 import Data.Proxy               (Proxy)
 import Data.Serialize           (Serialize, encode, decode)
 import Database.Redis as Redis hiding (decode)
+import GHC.TypeLits
 
 --------------------------------------------------------------------------------
 --  Helper functions

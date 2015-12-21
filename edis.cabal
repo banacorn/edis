@@ -17,6 +17,19 @@ cabal-version:       >=1.10
 
 library
     exposed-modules:    Database.Edis
+    other-modules:      Database.Edis.Type
+                    ,   Database.Edis.Helper
+                    ,   Database.Edis.Command
+                    ,   Database.Edis.Command.Key
+                    ,   Database.Edis.Command.String
+                    ,   Database.Edis.Command.List
+                    ,   Database.Edis.Command.Hash
+                    ,   Database.Edis.Command.Set
+                    ,   Database.Edis.Command.ZSet
+                    ,   Database.Edis.Command.Server
+                    ,   Database.Edis.Command.Connection
+                    ,   Database.Edis.Command.Scripting
+                    ,   Database.Edis.Command.PubSub
     -- other-modules:  Main
     -- other-extensions:
     build-depends:      base >=4.8 && <5

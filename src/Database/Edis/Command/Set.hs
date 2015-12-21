@@ -1,14 +1,14 @@
 {-# LANGUAGE DataKinds, TypeFamilies, TypeOperators, OverloadedStrings #-}
 
-module Database.Edis.Promoted.Set where
+module Database.Edis.Command.Set where
 
 import Database.Edis.Type
-import Database.Edis.Promoted.Helper
+import Database.Edis.Helper
 
 import Data.Proxy               (Proxy)
-import Database.Redis as Redis hiding (decode)
 import Data.Serialize           (Serialize, encode)
 import Data.Type.Bool
+import Database.Redis as Redis hiding (decode)
 import GHC.TypeLits
 
 --------------------------------------------------------------------------------

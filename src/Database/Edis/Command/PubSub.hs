@@ -1,6 +1,6 @@
-module Database.Edis.Promoted.PubSub (
-        Database.Edis.Promoted.PubSub.publish
-    ,   Database.Edis.Promoted.PubSub.pubSub
+module Database.Edis.Command.PubSub (
+        Database.Edis.Command.PubSub.publish
+    ,   Database.Edis.Command.PubSub.pubSub
     ,   subscribe
     ,   unsubscribe
     ,   psubscribe

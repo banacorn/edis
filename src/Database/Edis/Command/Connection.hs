@@ -1,4 +1,4 @@
-module Database.Edis.Promoted.Connection where
+module Database.Edis.Command.Connection where
 
 import Database.Edis.Type
 

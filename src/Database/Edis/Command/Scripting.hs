@@ -1,4 +1,4 @@
-module Database.Edis.Promoted.Scripting where
+module Database.Edis.Command.Scripting where
 
 import Database.Edis.Type
 

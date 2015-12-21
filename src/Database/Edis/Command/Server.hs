@@ -1,4 +1,4 @@
-module Database.Edis.Promoted.Server where
+module Database.Edis.Command.Server where
 
 import Database.Edis.Type
 
