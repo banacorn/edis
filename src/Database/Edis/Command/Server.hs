@@ -1,3 +1,5 @@
+{-# LANGUAGE PolyKinds #-}
+
 module Database.Edis.Command.Server where
 
 import Database.Edis.Type

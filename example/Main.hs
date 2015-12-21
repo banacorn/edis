@@ -7,11 +7,8 @@ import Database.Edis
 main :: IO ()
 main = do
     conn <- connect defaultConnectInfo
-    result <- runRedis conn $ unEdis $ start
-        >>> zadd    (Proxy :: Proxy "S")   3.0 True
-        -- >>> smove   (Proxy :: Proxy "L")    (Proxy :: Proxy "Z")    True
-        -- >>> smembers    (Proxy :: Proxy "S")
-        -- >>> set         (Proxy :: Proxy "S")    True
-        -- >>> incr        (Proxy :: Proxy "A")
-    print result
+    runRedis conn $ unEdis $ start
+        `bind`  \_ -> set     (Proxy :: Proxy "hello")    True
+        `bind`  \_ -> set     (Proxy :: Proxy "world")    [True, False]
+        `bind`  \_ -> get     (Proxy :: Proxy "world")
     return ()

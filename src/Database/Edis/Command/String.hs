@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, TypeFamilies, TypeOperators, OverloadedStrings #-}
+{-# LANGUAGE DataKinds, PolyKinds, TypeFamilies, TypeOperators, OverloadedStrings #-}
 
 module Database.Edis.Command.String where
 

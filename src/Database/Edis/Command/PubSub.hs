@@ -1,3 +1,5 @@
+{-# LANGUAGE PolyKinds #-}
+
 module Database.Edis.Command.PubSub (
         Database.Edis.Command.PubSub.publish
     ,   Database.Edis.Command.PubSub.pubSub

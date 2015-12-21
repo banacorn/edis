@@ -1,16 +1,27 @@
 {-# LANGUAGE DataKinds, TypeFamilies, TypeOperators, OverloadedStrings, PolyKinds #-}
 
 module Database.Edis.Command (
+        -- ** Keys
         module Database.Edis.Command.Key
+        -- ** Strings
     ,   module Database.Edis.Command.String
+        -- ** Lists
     ,   module Database.Edis.Command.List
+        -- ** Hashes
     ,   module Database.Edis.Command.Hash
+        -- ** Sets
     ,   module Database.Edis.Command.Set
+        -- ** Sorted Sets
     ,   module Database.Edis.Command.ZSet
+        -- ** Server
     ,   module Database.Edis.Command.Server
+        -- ** Connection
     ,   module Database.Edis.Command.Connection
+        -- ** Scripting
     ,   module Database.Edis.Command.Scripting
+        -- ** Pub/Sub
     ,   module Database.Edis.Command.PubSub
+        -- ** Assertions on types
     ,   start, declare, renounce
     ) where
 
