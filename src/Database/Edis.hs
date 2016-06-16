@@ -40,6 +40,12 @@ module Database.Edis (
     ,   IMonad(..)
     ,   (>>>)
 
+    ,   StringOf
+    ,   HashOf
+    ,   ListOf
+    ,   SetOf
+    ,   ZSetOf
+
     ,   Redis.Reply
     ,   Redis.runRedis
     ,   Redis.connect
