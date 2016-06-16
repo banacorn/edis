@@ -30,20 +30,20 @@ bitcountRange :: (KnownSymbol s, StringOrNX xs s)
 bitcountRange key m n = Edis $ Redis.bitcountRange (encodeKey key) m n
 
 --  key must be String or non-existent
-bitopAnd :: (KnownSymbol s, KnownSymbol t, StringOrNX xs s)
-        => Proxy t -> Proxy s -> Edis xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
-bitopAnd dest key = Edis $ Redis.bitopAnd (encodeKey dest) [encodeKey key]
+bitopAnd :: (KnownSymbol s, KnownSymbol t, KnownSymbol u, StringOrNX xs s)
+        => Proxy s -> Proxy t -> Proxy u -> Edis xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
+bitopAnd dest keyA keyB = Edis $ Redis.bitopAnd (encodeKey dest) [encodeKey keyA, encodeKey keyB]
 
-bitopOr :: (KnownSymbol s, KnownSymbol t, StringOrNX xs s)
-        => Proxy t -> Proxy s -> Edis xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
-bitopOr dest key = Edis $ Redis.bitopOr (encodeKey dest) [encodeKey key]
+bitopOr :: (KnownSymbol s, KnownSymbol t, KnownSymbol u, StringOrNX xs s)
+        => Proxy s -> Proxy t -> Proxy u -> Edis xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
+bitopOr dest keyA keyB = Edis $ Redis.bitopOr (encodeKey dest) [encodeKey keyA, encodeKey keyB]
 
-bitopXor :: (KnownSymbol s, KnownSymbol t, StringOrNX xs s)
-        => Proxy t -> Proxy s -> Edis xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
-bitopXor dest key = Edis $ Redis.bitopXor (encodeKey dest) [encodeKey key]
+bitopXor :: (KnownSymbol s, KnownSymbol t, KnownSymbol u, StringOrNX xs s)
+        => Proxy s -> Proxy t -> Proxy u -> Edis xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
+bitopXor dest keyA keyB = Edis $ Redis.bitopXor (encodeKey dest) [encodeKey keyA, encodeKey keyB]
 
 bitopNot :: (KnownSymbol s, KnownSymbol t, StringOrNX xs s)
-        => Proxy t -> Proxy s -> Edis xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
+        => Proxy s -> Proxy t -> Edis xs (Set xs s (StringOf ByteString)) (Either Reply Integer)
 bitopNot dest key = Edis $ Redis.bitopNot (encodeKey dest) (encodeKey key)
 
 decr :: (KnownSymbol s, StringOfIntegerOrNX xs s)
