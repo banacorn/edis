@@ -46,6 +46,31 @@ module Database.Edis (
     ,   SetOf
     ,   ZSetOf
 
+    ,   IsString
+    ,   IsHash
+    ,   IsList
+    ,   IsSet
+    ,   IsZSet
+
+    ,   StringOrNX
+    ,   StringOfIntegerOrNX
+    ,   StringOfDoubleOrNX
+    ,   HashOrNX
+    ,   ListOrNX
+    ,   SetOrNX
+    ,   ZSetOrNX
+
+    ,   FromJust
+
+    ,   Get
+    ,   Set
+    ,   Del
+    ,   Member
+    ,   GetHash
+    ,   SetHash
+    ,   DelHash
+    ,   MemHash
+
     ,   Redis.Reply
     ,   Redis.runRedis
     ,   Redis.connect

@@ -38,8 +38,8 @@ sdiffstore :: (KnownSymbol s, KnownSymbol t, SetOrNX xs s, SetOrNX xs t)
 sdiffstore dest key = Edis $ Redis.sdiffstore (encodeKey dest) [encodeKey key]
 
 sinter :: (KnownSymbol s, KnownSymbol t, Serialize x
-        , 'Just (SetOf x) ~ Get xs s  -- must exist
-        , SetOrNX xs s)
+        , SetOf x ~ FromJust (Get xs s) -- just to get x
+        , SetOf x ~ FromJust (Get xs t)) -- force both set to have the same type of elements
         => Proxy s -> Proxy t
         -> Edis xs xs (Either Reply [x])
 sinter key key' = Edis $ Redis.sinter [encodeKey key, encodeKey key'] >>= decodeAsList
